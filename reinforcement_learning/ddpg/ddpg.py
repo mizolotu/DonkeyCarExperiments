@@ -1011,9 +1011,9 @@ class DDPG(OffPolicyRLModel):
                                 eval_episode_reward += eval_r
 
                                 eval_qs.append(eval_q)
-                                if eval_done or _ == self.nb.eval_steps - 1:
-                                    if not isinstance(self.env, VecEnv):
-                                        eval_obs = self.eval_env.reset()
+                                if eval_done or _ == self.nb_eval_steps - 1:
+                                    #if not isinstance(self.env, VecEnv):
+                                    eval_obs = self.eval_env.reset()
                                     eval_episode_rewards.append(eval_episode_reward)
                                     eval_episode_rewards_history.append(eval_episode_reward)
                                     eval_episode_reward = 0.
