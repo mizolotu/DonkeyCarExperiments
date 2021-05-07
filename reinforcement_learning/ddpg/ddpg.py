@@ -229,10 +229,10 @@ class DDPG(OffPolicyRLModel):
         self.normalize_returns = normalize_returns
 
         n_actions = env.action_space.shape[-1]
-        action_noise = OrnsteinUhlenbeckActionNoise(mean=np.zeros(n_actions), sigma=float(0.5) * np.ones(n_actions))
+        action_noise = OrnsteinUhlenbeckActionNoise(mean=np.zeros(n_actions), sigma=float(0.05) * np.ones(n_actions))
         self.action_noise = action_noise
 
-        param_noise = AdaptiveParamNoiseSpec(initial_stddev=0.3, desired_action_stddev=0.1)
+        param_noise = AdaptiveParamNoiseSpec(initial_stddev=0.05, desired_action_stddev=0.3)
         self.param_noise = param_noise
 
         self.return_range = return_range
