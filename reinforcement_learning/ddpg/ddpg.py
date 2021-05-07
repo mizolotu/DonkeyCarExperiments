@@ -959,7 +959,7 @@ class DDPG(OffPolicyRLModel):
 
                                 self._reset()
                                 #if not isinstance(self.env, VecEnv):
-                                print(done, _ == self.nb_rollout_steps - 1,done or _ == self.nb_rollout_steps - 1)
+                                #print(done, _ == self.nb_rollout_steps - 1,done or _ == self.nb_rollout_steps - 1)
                                 obs = self.env.reset()
 
                         callback.on_rollout_end()
