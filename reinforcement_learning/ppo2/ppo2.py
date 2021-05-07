@@ -54,8 +54,8 @@ class PPO2(ActorCriticRLModel):
     :param n_cpu_tf_sess: (int) The number of threads for TensorFlow operations
         If None, the number of cpu of the current machine will be used.
     """
-    def __init__(self, policy, env, gamma=0.99, n_steps=256, ent_coef=0.01, learning_rate=1e-4, vf_coef=0.5,
-                 max_grad_norm=0.5, lam=0.95, nminibatches=4, noptepochs=4, cliprange=0.2, cliprange_vf=None,
+    def __init__(self, policy, env, gamma=0.99, n_steps=256, ent_coef=0.01, learning_rate=2.5e-4, vf_coef=0.5,
+                 max_grad_norm=0.5, lam=0.95, nminibatches=4, noptepochs=8, cliprange=0.2, cliprange_vf=None,
                  verbose=0, tensorboard_log=None, _init_setup_model=True, policy_kwargs=None,
                  full_tensorboard_log=False, seed=None, n_cpu_tf_sess=None):
 
@@ -350,7 +350,6 @@ class PPO2(ActorCriticRLModel):
                 # Early stopping due to the callback
                 if not self.runner.continue_training:
                     break
-
                 self.ep_info_buf.extend(ep_infos)
                 mb_loss_vals = []
                 if states is None:  # nonrecurrent version
@@ -484,6 +483,8 @@ class Runner(AbstractEnvRunner):
         self.mb_rewards = [[] for _ in range(self.n_envs)]
         self.scores = [[] for _ in range(self.n_envs)]
 
+        self.obs[:] = self.env.reset()
+
     def _run_one(self, env_idx):
 
         tstart = time.time()
@@ -558,7 +559,7 @@ class Runner(AbstractEnvRunner):
 
         ep_infos = []
 
-        self.obs[:] = self.env.reset()
+        #self.obs[:] = self.env.reset()
 
         # run steps in different threads
 
@@ -582,9 +583,10 @@ class Runner(AbstractEnvRunner):
         mb_states = self.states
         self.dones = np.array(self.dones)
 
-        for scores_in_env in mb_scores:
+        score_in_envs = safe_mean(np.array(mb_scores)).reshape(self.n_envs,)
+        for score_in_env in score_in_envs:
             maybe_ep_info = {
-                'r': safe_mean(scores_in_env[:, 0])
+                'r': score_in_env
             }
             ep_infos.append(maybe_ep_info)
 

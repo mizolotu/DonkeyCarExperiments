@@ -53,8 +53,8 @@ class ACKTR(ActorCriticRLModel):
         If None, the number of cpu of the current machine will be used.
     """
 
-    def __init__(self, policy, env, gamma=0.99, nprocs=None, n_steps=16, ent_coef=0.001, vf_coef=0.5, vf_fisher_coef=1.0,
-                 learning_rate=0.06, max_grad_norm=0.5, kfac_clip=0.001, lr_schedule='linear', verbose=0,
+    def __init__(self, policy, env, gamma=0.99, nprocs=None, n_steps=20, ent_coef=0.01, vf_coef=0.25, vf_fisher_coef=1.0,
+                 learning_rate=0.25, max_grad_norm=0.5, kfac_clip=0.001, lr_schedule='linear', verbose=0,
                  tensorboard_log=None, _init_setup_model=True, async_eigen_decomp=False, kfac_update=1,
                  gae_lambda=None, policy_kwargs=None, full_tensorboard_log=False, seed=None, n_cpu_tf_sess=1):
 
@@ -282,21 +282,25 @@ class ACKTR(ActorCriticRLModel):
 
         return policy_loss, value_loss, policy_entropy
 
-    def learn(self, total_timesteps, callback=None, log_interval=128, tb_log_name="ACKTR", reset_num_timesteps=True):
+    def learn(self, total_timesteps, callback=None, log_interval=100, tb_log_name="ACKTR",
+              reset_num_timesteps=True):
 
         new_tb_log = self._init_num_timesteps(reset_num_timesteps)
         callback = self._init_callback(callback)
 
-        with SetVerbosity(self.verbose), TensorboardWriter(self.graph, self.tensorboard_log, tb_log_name, new_tb_log) as writer:
+        with SetVerbosity(self.verbose), TensorboardWriter(self.graph, self.tensorboard_log, tb_log_name, new_tb_log) \
+                as writer:
             self._setup_learn()
             self.n_batch = self.n_envs * self.n_steps
 
-            self.learning_rate_schedule = Scheduler(initial_value=self.learning_rate, n_values=total_timesteps, schedule=self.lr_schedule)
+            self.learning_rate_schedule = Scheduler(initial_value=self.learning_rate, n_values=total_timesteps,
+                                                    schedule=self.lr_schedule)
 
             # FIFO queue of the q_runner thread is closed at the end of the learn function.
             # As a result, it needs to be redefinied at every call
             with self.graph.as_default():
-                with tf.compat.v1.variable_scope("kfac_apply", reuse=self.trained, custom_getter=tf_util.outer_scope_getter("kfac_apply")):
+                with tf.compat.v1.variable_scope("kfac_apply", reuse=self.trained,
+                                       custom_getter=tf_util.outer_scope_getter("kfac_apply")):
                     # Some of the variables are not in a scope when they are create
                     # so we make a note of any previously uninitialized variables
                     tf_vars = tf.compat.v1.global_variables()
@@ -370,7 +374,7 @@ class ACKTR(ActorCriticRLModel):
                     logger.record_tabular("explained_variance", float(explained_var))
                     if len(self.ep_info_buf) > 0 and len(self.ep_info_buf[0]) > 0:
                         logger.logkv('ep_reward_mean', safe_mean([ep_info['r'] for ep_info in self.ep_info_buf]))
-                        #logger.logkv('ep_len_mean', safe_mean([ep_info['l'] for ep_info in self.ep_info_buf]))
+                        logger.logkv('ep_len_mean', safe_mean([ep_info['l'] for ep_info in self.ep_info_buf]))
                     logger.dump_tabular()
 
             coord.request_stop()

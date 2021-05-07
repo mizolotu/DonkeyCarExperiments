@@ -1,7 +1,7 @@
 import argparse as arp
 import os
 
-from reinforcement_learning.gym.envs.donkey_env import DonkeyEnv
+from reinforcement_learning.gym.envs import DonkeyEnv
 from reinforcement_learning.ppo2.ppo2 import PPO2 as ppo
 from reinforcement_learning.common.vec_env.subproc_vec_env import SubprocVecEnv
 from reinforcement_learning.common.policies import MlpPolicy

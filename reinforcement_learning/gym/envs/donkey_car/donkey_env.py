@@ -10,8 +10,8 @@ import numpy as np
 from reinforcement_learning.gym import spaces
 from reinforcement_learning.gym.utils import seeding
 
-from reinforcement_learning.gym.envs.donkey_proc import DonkeyUnityProcess
-from reinforcement_learning.gym.envs.donkey_sim import DonkeyUnitySimContoller
+from reinforcement_learning.gym.envs.donkey_car.donkey_proc import DonkeyUnityProcess
+from reinforcement_learning.gym.envs.donkey_car.donkey_sim import DonkeyUnitySimContoller
 
 logger = logging.getLogger(__name__)
 

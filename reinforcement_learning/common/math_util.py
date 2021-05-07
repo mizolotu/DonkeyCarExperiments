@@ -10,7 +10,7 @@ def safe_mean(arr):
     :param arr: (np.ndarray)
     :return: (float)
     """
-    return np.nan if len(arr) == 0 else np.nanmean(arr)
+    return np.nan if len(arr) == 0 else np.nanmean(arr, axis=0)
 
 
 def discount(vector, gamma):

@@ -144,7 +144,7 @@ class ReplayBuffer(object):
 
 
 class PrioritizedReplayBuffer(ReplayBuffer):
-    def __init__(self, size, alpha):
+    def __init__(self, size, alpha=0.6):
         """
         Create Prioritized Replay buffer.
 
@@ -209,7 +209,7 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         idx = self._it_sum.find_prefixsum_idx(mass)
         return idx
 
-    def sample(self, batch_size: int, beta: float = 0, env: Optional[VecNormalize] = None):
+    def sample(self, batch_size: int, beta: float = 0.4, env: Optional[VecNormalize] = None):
         """
         Sample a batch of experiences.
 

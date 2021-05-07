@@ -15,10 +15,11 @@ from reinforcement_learning import logger
 from reinforcement_learning.common import tf_util, OffPolicyRLModel, SetVerbosity, TensorboardWriter
 from reinforcement_learning.common.vec_env import VecEnv
 from reinforcement_learning.common.mpi_adam import MpiAdam
-from reinforcement_learning.common.buffers import ReplayBuffer
+from reinforcement_learning.common.buffers import ReplayBuffer, PrioritizedReplayBuffer
 from reinforcement_learning.common.math_util import unscale_action, scale_action
 from reinforcement_learning.common.mpi_running_mean_std import RunningMeanStd
 from reinforcement_learning.ddpg.policies import DDPGPolicy
+from reinforcement_learning.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise, AdaptiveParamNoiseSpec
 
 
 def normalize(tensor, stats):
@@ -197,11 +198,11 @@ class DDPG(OffPolicyRLModel):
         If None, the number of cpu of the current machine will be used.
     """
     def __init__(self, policy, env, gamma=0.99, memory_policy=None, eval_env=None, nb_train_steps=50,
-                 nb_rollout_steps=100, nb_eval_steps=100, param_noise=None, action_noise=None,
-                 normalize_observations=False, tau=0.001, batch_size=128, param_noise_adaption_interval=50,
+                 nb_rollout_steps=256, nb_eval_steps=256, param_noise=None, action_noise=None,
+                 normalize_observations=True, tau=0.001, batch_size=256, param_noise_adaption_interval=50,
                  normalize_returns=False, enable_popart=False, observation_range=(-5., 5.), critic_l2_reg=0.,
                  return_range=(-np.inf, np.inf), actor_lr=1e-4, critic_lr=1e-3, clip_norm=None, reward_scale=1.,
-                 render=False, render_eval=False, memory_limit=None, buffer_size=50000, random_exploration=0.0,
+                 render=False, render_eval=False, memory_limit=None, buffer_size=100000, random_exploration=0.0,
                  verbose=0, tensorboard_log=None, _init_setup_model=True, policy_kwargs=None,
                  full_tensorboard_log=False, seed=None, n_cpu_tf_sess=1):
 
@@ -226,8 +227,14 @@ class DDPG(OffPolicyRLModel):
 
         self.normalize_observations = normalize_observations
         self.normalize_returns = normalize_returns
+
+        n_actions = env.action_space.shape[-1]
+        action_noise = OrnsteinUhlenbeckActionNoise(mean=np.zeros(n_actions), sigma=float(0.5) * np.ones(n_actions))
         self.action_noise = action_noise
+
+        param_noise = AdaptiveParamNoiseSpec(initial_stddev=0.3, desired_action_stddev=0.1)
         self.param_noise = param_noise
+
         self.return_range = return_range
         self.observation_range = observation_range
         self.actor_lr = actor_lr
@@ -308,6 +315,8 @@ class DDPG(OffPolicyRLModel):
         if _init_setup_model:
             self.setup_model()
 
+        self.ep_info_buf = deque(maxlen=40)
+
     def _get_pretrain_placeholders(self):
         policy = self.policy_tf
         # Rescale
@@ -328,6 +337,7 @@ class DDPG(OffPolicyRLModel):
                 self.sess = tf_util.make_session(num_cpu=self.n_cpu_tf_sess, graph=self.graph)
 
                 self.replay_buffer = ReplayBuffer(self.buffer_size)
+                #self.replay_buffer = PrioritizedReplayBuffer(self.buffer_size)
 
                 with tf.compat.v1.variable_scope("input", reuse=False):
                     # Observation normalization.
@@ -804,7 +814,7 @@ class DDPG(OffPolicyRLModel):
                 self.param_noise_stddev: self.param_noise.current_stddev,
             })
 
-    def learn(self, total_timesteps, callback=None, log_interval=100, tb_log_name="DDPG",
+    def learn(self, total_timesteps, callback=None, log_interval=4, tb_log_name="DDPG",
               reset_num_timesteps=True, replay_wrapper=None):
 
         new_tb_log = self._init_num_timesteps(reset_num_timesteps)
@@ -865,7 +875,9 @@ class DDPG(OffPolicyRLModel):
                 while True:
                     for _ in range(log_interval):
                         callback.on_rollout_start()
+
                         # Perform rollouts.
+
                         for _ in range(self.nb_rollout_steps):
 
                             if total_steps >= total_timesteps:
@@ -931,7 +943,7 @@ class DDPG(OffPolicyRLModel):
                                 tf_util.total_episode_reward_logger(self.episode_reward, ep_rew, ep_done,
                                                                     writer, self.num_timesteps)
 
-                            if done:
+                            if done or _ == self.nb_rollout_steps - 1:
                                 # Episode done.
                                 epoch_episode_rewards.append(episode_reward)
                                 episode_rewards_history.append(episode_reward)
@@ -946,11 +958,14 @@ class DDPG(OffPolicyRLModel):
                                     episode_successes.append(float(maybe_is_success))
 
                                 self._reset()
-                                if not isinstance(self.env, VecEnv):
-                                    obs = self.env.reset()
+                                #if not isinstance(self.env, VecEnv):
+                                print(done, _ == self.nb_rollout_steps - 1,done or _ == self.nb_rollout_steps - 1)
+                                obs = self.env.reset()
 
                         callback.on_rollout_end()
+
                         # Train.
+
                         epoch_actor_losses = []
                         epoch_critic_losses = []
                         epoch_adaptive_distances = []
@@ -976,6 +991,8 @@ class DDPG(OffPolicyRLModel):
                             self._update_target_net()
 
                         # Evaluate.
+
+                        rewards = []
                         eval_episode_rewards = []
                         eval_qs = []
                         if self.eval_env is not None:
@@ -986,18 +1003,24 @@ class DDPG(OffPolicyRLModel):
 
                                 eval_action, eval_q = self._policy(eval_obs, apply_noise=False, compute_q=True)
                                 unscaled_action = unscale_action(self.action_space, eval_action)
-                                eval_obs, eval_r, eval_done, _ = self.eval_env.step(unscaled_action)
+                                eval_obs, eval_r, eval_done, _ = self.eval_env.step([unscaled_action])
+                                rewards.append(eval_r)
+
                                 if self.render_eval:
                                     self.eval_env.render()
                                 eval_episode_reward += eval_r
 
                                 eval_qs.append(eval_q)
-                                if eval_done:
+                                if eval_done or _ == self.nb.eval_steps - 1:
                                     if not isinstance(self.env, VecEnv):
                                         eval_obs = self.eval_env.reset()
                                     eval_episode_rewards.append(eval_episode_reward)
                                     eval_episode_rewards_history.append(eval_episode_reward)
                                     eval_episode_reward = 0.
+
+                            self.ep_info_buf.append(
+                                {'r': np.mean(rewards)}
+                            )
 
                     mpi_size = MPI.COMM_WORLD.Get_size()
 
@@ -1010,26 +1033,31 @@ class DDPG(OffPolicyRLModel):
                     duration = time.time() - start_time
                     stats = self._get_stats()
                     combined_stats = stats.copy()
-                    combined_stats['rollout/return'] = np.mean(epoch_episode_rewards)
-                    combined_stats['rollout/return_history'] = np.mean(episode_rewards_history)
-                    combined_stats['rollout/episode_steps'] = np.mean(epoch_episode_steps)
-                    combined_stats['rollout/actions_mean'] = np.mean(epoch_actions)
-                    combined_stats['rollout/Q_mean'] = np.mean(epoch_qs)
+
+                    combined_stats = {}
+
+                    if len(self.ep_info_buf) > 0 and len(self.ep_info_buf[0]) > 0:
+                        logger.logkv('ep_reward_mean', np.mean([ep_info['r'] for ep_info in self.ep_info_buf]))
+                    #combined_stats['rollout/return'] = np.mean(epoch_episode_rewards)
+                    #combined_stats['rollout/return_history'] = np.mean(episode_rewards_history)
+                    #combined_stats['rollout/episode_steps'] = np.mean(epoch_episode_steps)
+                    #combined_stats['rollout/actions_mean'] = np.mean(epoch_actions)
+                    #combined_stats['rollout/Q_mean'] = np.mean(epoch_qs)
                     combined_stats['train/loss_actor'] = np.mean(epoch_actor_losses)
                     combined_stats['train/loss_critic'] = np.mean(epoch_critic_losses)
-                    if len(epoch_adaptive_distances) != 0:
-                        combined_stats['train/param_noise_distance'] = np.mean(epoch_adaptive_distances)
+                    #if len(epoch_adaptive_distances) != 0:
+                    #    combined_stats['train/param_noise_distance'] = np.mean(epoch_adaptive_distances)
                     combined_stats['total/duration'] = duration
                     combined_stats['total/steps_per_second'] = float(step) / float(duration)
-                    combined_stats['total/episodes'] = episodes
-                    combined_stats['rollout/episodes'] = epoch_episodes
-                    combined_stats['rollout/actions_std'] = np.std(epoch_actions)
+                    #combined_stats['total/episodes'] = episodes
+                    #combined_stats['rollout/episodes'] = epoch_episodes
+                    #combined_stats['rollout/actions_std'] = np.std(epoch_actions)
                     # Evaluation statistics.
-                    if self.eval_env is not None:
-                        combined_stats['eval/return'] = np.mean(eval_episode_rewards)
-                        combined_stats['eval/return_history'] = np.mean(eval_episode_rewards_history)
-                        combined_stats['eval/Q'] = np.mean(eval_qs)
-                        combined_stats['eval/episodes'] = len(eval_episode_rewards)
+                    #if self.eval_env is not None:
+                    #    combined_stats['eval/return'] = np.mean(eval_episode_rewards)
+                    #    combined_stats['eval/return_history'] = np.mean(eval_episode_rewards_history)
+                    #    combined_stats['eval/Q'] = np.mean(eval_qs)
+                    #    combined_stats['eval/episodes'] = len(eval_episode_rewards)
 
                     def as_scalar(scalar):
                         """
@@ -1051,8 +1079,8 @@ class DDPG(OffPolicyRLModel):
                     combined_stats = {k: v / mpi_size for (k, v) in zip(combined_stats.keys(), combined_stats_sums)}
 
                     # Total statistics.
-                    combined_stats['total/epochs'] = epoch + 1
-                    combined_stats['total/steps'] = step
+                    # combined_stats['total/epochs'] = epoch + 1
+                    combined_stats['total_timesteps'] = step
 
                     for key in sorted(combined_stats.keys()):
                         logger.record_tabular(key, combined_stats[key])
