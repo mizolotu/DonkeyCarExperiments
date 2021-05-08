@@ -63,8 +63,8 @@ if __name__ == '__main__':
     # params
 
     parser = arp.ArgumentParser(description='Plot progress')
-    parser.add_argument('-i', '--input', help='Input directory', default='results/Continuous_MountainCarEnv/DDPG')
-    parser.add_argument('-o', '--output', help='Output directory', default='figures/Continuous_MountainCarEnv/DDPG')
+    parser.add_argument('-i', '--input', help='Input directory', default='results/BipedalWalker/DDPG')
+    parser.add_argument('-o', '--output', help='Output directory', default='figures/BipedalWalker/DDPG')
     args = parser.parse_args()
 
     colors = [['rgb(64,120,211)'], ['rgb(0,100,80)'], ['rgb(237,2,11)'], ['rgb(255,165,0)', 'rgb(139,0,139)', 'rgb(0,51,102)']]

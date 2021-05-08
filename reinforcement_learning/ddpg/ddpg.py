@@ -1173,6 +1173,10 @@ class DDPG(OffPolicyRLModel):
     def load(cls, load_path, env=None, custom_objects=None, **kwargs):
         data, params = cls._load_from_file(load_path, custom_objects=custom_objects)
 
+        print('loaded params:')
+        for key in data.keys():
+            print(key, data[key])
+
         if 'policy_kwargs' in kwargs and kwargs['policy_kwargs'] != data['policy_kwargs']:
             raise ValueError("The specified policy kwargs do not equal the stored policy kwargs. "
                              "Stored kwargs: {}, specified kwargs: {}".format(data['policy_kwargs'],
