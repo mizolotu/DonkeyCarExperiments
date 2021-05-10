@@ -228,11 +228,12 @@ class DDPG(OffPolicyRLModel):
         self.normalize_observations = normalize_observations
         self.normalize_returns = normalize_returns
 
-        n_actions = env.action_space.shape[-1]
-        action_noise = OrnsteinUhlenbeckActionNoise(mean=np.zeros(n_actions), sigma=float(0.05) * np.ones(n_actions))
-        self.action_noise = action_noise
+        if env is not None:
+            n_actions = env.action_space.shape[-1]
+            action_noise = OrnsteinUhlenbeckActionNoise(mean=np.zeros(n_actions), sigma=float(0.5) * np.ones(n_actions))
+            self.action_noise = action_noise
 
-        param_noise = AdaptiveParamNoiseSpec(initial_stddev=0.05, desired_action_stddev=0.3)
+        param_noise = AdaptiveParamNoiseSpec(initial_stddev=0.1, desired_action_stddev=0.1)
         self.param_noise = param_noise
 
         self.return_range = return_range
@@ -322,6 +323,65 @@ class DDPG(OffPolicyRLModel):
         # Rescale
         deterministic_action = unscale_action(self.action_space, self.actor_tf)
         return policy.obs_ph, self.actions, deterministic_action
+
+    def pretrain(self, data_tr, batch_size=256, n_epochs=10, learning_rate=1e-3, adam_epsilon=1e-8, val_interval=None, l2_loss_weight=0.0, log_freq=100):
+
+        continuous_actions = isinstance(self.action_space, reinforcement_learning.gym.spaces.Box)
+        discrete_actions = isinstance(self.action_space, reinforcement_learning.gym.spaces.Discrete)
+
+        assert discrete_actions or continuous_actions, 'Only Discrete and Box action spaces are supported'
+
+        with self.graph.as_default():
+            with tf.compat.v1.variable_scope('pretrain'):
+                if continuous_actions:
+                    obs_ph, actions_ph, deterministic_actions_ph = self._get_pretrain_placeholders()
+                    policy_loss = tf.reduce_mean(input_tensor=tf.square(actions_ph - deterministic_actions_ph))
+                    weight_params = [v for v in self.params if '/b' not in v.name]
+                    l2_loss = tf.reduce_sum([tf.nn.l2_loss(v) for v in weight_params])
+                    loss = policy_loss + l2_loss_weight * l2_loss
+                else:
+                    obs_ph, actions_ph, actions_logits_ph = self._get_pretrain_placeholders()
+                    actions_ph = tf.expand_dims(actions_ph, axis=1)
+                    one_hot_actions = tf.one_hot(actions_ph, self.action_space.n)
+                    loss = tf.nn.softmax_cross_entropy_with_logits(
+                        logits=actions_logits_ph,
+                        labels=tf.stop_gradient(one_hot_actions)
+                    )
+                    loss = tf.reduce_mean(input_tensor=loss)
+                optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=learning_rate, epsilon=adam_epsilon)
+                optim_op = optimizer.minimize(loss, var_list=self.params)
+
+            self.sess.run(tf.compat.v1.global_variables_initializer())
+
+        if self.verbose > 0:
+            print("Pretraining with behavior cloning for {0} epochs on {1} samples of size {2}:".format(n_epochs, data_tr.shape[0], data_tr.shape[1]))
+
+        print(self.observation_space, self.action_space)
+        obs_dim = self.observation_space.shape[1]
+        act_dim = self.action_space.shape[0]
+
+        ntrain = data_tr.shape[0]
+        nbatches = ntrain // batch_size
+
+        for epoch_idx in range(int(n_epochs)):
+            train_loss = 0.0
+            for i in range(nbatches):
+                idx = np.random.choice(ntrain, batch_size)
+                expert_obs, expert_actions = data_tr[idx, :obs_dim], data_tr[idx, obs_dim:obs_dim+act_dim]
+                expert_obs = expert_obs.reshape(batch_size, 1, obs_dim)
+                feed_dict = {
+                    obs_ph: expert_obs,
+                    actions_ph: expert_actions
+                }
+                train_loss_, _ = self.sess.run([loss, optim_op], feed_dict)
+                train_loss += train_loss_
+            train_loss /= nbatches
+            print('Epoch {0}/{1}: training loss = {2}'.format(epoch_idx + 1, n_epochs, train_loss))
+
+        del expert_obs, expert_actions
+        print("Pretraining done!")
+
+        return self
 
     def setup_model(self):
         with SetVerbosity(self.verbose):
