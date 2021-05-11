@@ -717,6 +717,18 @@ class MlpPolicy(FeedForwardPolicy):
     def __init__(self, *args, **kwargs):
         super(MlpPolicy, self).__init__(*args, **kwargs, net_arch=[256, dict(vf=[256], pi=[256])], feature_extraction="mlp")
 
+class policy_0(FeedForwardPolicy):
+    def __init__(self, *args, **kwargs):
+        super(policy_0, self).__init__(*args, **kwargs, net_arch=[dict(vf=[256, 256], pi=[256, 256])], feature_extraction="mlp")
+
+class policy_1(FeedForwardPolicy):
+    def __init__(self, *args, **kwargs):
+        super(policy_1, self).__init__(*args, **kwargs, net_arch=[256, dict(vf=[256], pi=[256])], feature_extraction="mlp")
+
+class policy_2(FeedForwardPolicy):
+    def __init__(self, *args, **kwargs):
+        super(policy_2, self).__init__(*args, **kwargs, net_arch=[256, 256], feature_extraction="mlp")
+
 class MlpLstmPolicy(LstmPolicy):
     """
     Policy object that implements actor critic, using LSTMs with a MLP feature extraction

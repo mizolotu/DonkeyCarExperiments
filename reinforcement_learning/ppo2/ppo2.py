@@ -531,7 +531,7 @@ class Runner(AbstractEnvRunner):
 
             self.mb_rewards[env_idx].append(rewards)
 
-        print(f'Step time in {env_idx}: {(time.time() - tstart) / self.n_steps}')
+        #print(f'Step time in {env_idx}: {(time.time() - tstart) / self.n_steps}')
 
     def _run(self):
         """
