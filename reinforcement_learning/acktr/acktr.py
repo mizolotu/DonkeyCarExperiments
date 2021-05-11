@@ -282,7 +282,7 @@ class ACKTR(ActorCriticRLModel):
 
         return policy_loss, value_loss, policy_entropy
 
-    def learn(self, total_timesteps, callback=None, log_interval=100, tb_log_name="ACKTR",
+    def learn(self, total_timesteps, callback=None, log_interval=1, tb_log_name="ACKTR",
               reset_num_timesteps=True):
 
         new_tb_log = self._init_num_timesteps(reset_num_timesteps)
@@ -342,6 +342,7 @@ class ACKTR(ActorCriticRLModel):
                 else:
                     rollout = self.runner.run(callback)
                     obs, states, returns, masks, actions, values, ep_infos, true_reward = rollout
+
                 # pytype:enable=bad-unpacking
                 callback.update_locals(locals())
                 callback.on_rollout_end()
@@ -374,7 +375,7 @@ class ACKTR(ActorCriticRLModel):
                     logger.record_tabular("explained_variance", float(explained_var))
                     if len(self.ep_info_buf) > 0 and len(self.ep_info_buf[0]) > 0:
                         logger.logkv('ep_reward_mean', safe_mean([ep_info['r'] for ep_info in self.ep_info_buf]))
-                        logger.logkv('ep_len_mean', safe_mean([ep_info['l'] for ep_info in self.ep_info_buf]))
+                        #logger.logkv('ep_len_mean', safe_mean([ep_info['l'] for ep_info in self.ep_info_buf]))
                     logger.dump_tabular()
 
             coord.request_stop()

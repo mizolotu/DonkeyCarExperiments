@@ -65,7 +65,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--nenvs', help='Number of environments', type=int, default=4)
     parser.add_argument('-s', '--steps', help='Number of episode steps', type=int, default=256)
     parser.add_argument('-u', '--updates', help='Number of updates', type=int, default=10000)
-    parser.add_argument('-a', '--algorithm', help='RL algorithm index', type=int, default=0)
+    parser.add_argument('-a', '--algorithm', help='RL algorithm index', type=int, default=1)
     parser.add_argument('-o', '--output', help='Output directory', default='models')
     parser.add_argument('-c', '--cuda', help='Use CUDA', default=False, type=bool)
     parser.add_argument('-t', '--trainer', help='Expert model', default=None)
@@ -112,5 +112,5 @@ if __name__ == '__main__':
         logdir = f'{args.output}/{env_class.__name__}/{algorithm.__name__}/{policy.__name__}_{postfix}/'
         format_strs = os.getenv('', 'stdout,log,csv').split(',')
         logger.configure(os.path.abspath(logdir), format_strs)
-        model = algorithm(policy, env, verbose=1)
+        model = algorithm(policy, env, n_steps=args.steps, verbose=1)
         model.learn(total_timesteps=totalsteps)
