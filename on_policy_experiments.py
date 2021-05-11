@@ -63,7 +63,7 @@ if __name__ == '__main__':
     parser = arp.ArgumentParser(description='Test state-of-art RL alghorithms in OpenAI gym')
     parser.add_argument('-e', '--env', help='Environment index', type=int, default=0)
     parser.add_argument('-n', '--nenvs', help='Number of environments', type=int, default=4)
-    parser.add_argument('-s', '--steps', help='Number of episode steps', type=int, default=256)
+    parser.add_argument('-s', '--steps', help='Number of episode steps', type=int, default=64)
     parser.add_argument('-u', '--updates', help='Number of updates', type=int, default=10000)
     parser.add_argument('-a', '--algorithm', help='RL algorithm index', type=int, default=1)
     parser.add_argument('-o', '--output', help='Output directory', default='models')

@@ -53,8 +53,8 @@ class ACKTR(ActorCriticRLModel):
         If None, the number of cpu of the current machine will be used.
     """
 
-    def __init__(self, policy, env, gamma=0.99, nprocs=None, n_steps=20, ent_coef=0.01, vf_coef=0.25, vf_fisher_coef=1.0,
-                 learning_rate=0.25, max_grad_norm=0.5, kfac_clip=0.001, lr_schedule='linear', verbose=0,
+    def __init__(self, policy, env, gamma=0.99, nprocs=None, n_steps=20, ent_coef=0.001, vf_coef=0.25, vf_fisher_coef=1.0,
+                 learning_rate=0.06, max_grad_norm=0.5, kfac_clip=0.001, lr_schedule='linear', verbose=0,
                  tensorboard_log=None, _init_setup_model=True, async_eigen_decomp=False, kfac_update=1,
                  gae_lambda=None, policy_kwargs=None, full_tensorboard_log=False, seed=None, n_cpu_tf_sess=1):
 
