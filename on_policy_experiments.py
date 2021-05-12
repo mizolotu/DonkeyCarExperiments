@@ -13,8 +13,10 @@ from reinforcement_learning.common.callbacks import CheckpointCallback
 from reinforcement_learning.common.vec_env.subproc_vec_env import SubprocVecEnv
 from reinforcement_learning.common.policies import policy_0, policy_1, policy_2
 
+from reinforcement_learning.a2c.a2c import A2C as a2c
 from reinforcement_learning.ppo2.ppo2 import PPO2 as ppo
 from reinforcement_learning.acktr.acktr import ACKTR as acktr
+from reinforcement_learning.trpo_mpi.trpo_mpi import TRPO as trpo
 
 env_list = [
     PendulumEnv,
@@ -24,12 +26,12 @@ env_list = [
 ]
 
 algorithm_list = [
-    ppo,
-    acktr
+    a2c,
+    ppo
 ]
 
 policy_list = [
-    #policy_0,
+    policy_0,
     policy_1,
     policy_2
 ]
@@ -63,10 +65,10 @@ if __name__ == '__main__':
 
     parser = arp.ArgumentParser(description='Test state-of-art RL alghorithms in OpenAI gym')
     parser.add_argument('-e', '--env', help='Environment index', type=int, default=0)
-    parser.add_argument('-n', '--nenvs', help='Number of environments', type=int, default=4)
+    parser.add_argument('-n', '--nenvs', help='Number of environments', type=int, default=8)
     parser.add_argument('-s', '--steps', help='Number of episode steps', type=int, default=64)
-    parser.add_argument('-u', '--updates', help='Number of updates', type=int, default=10)
-    parser.add_argument('-a', '--algorithm', help='RL algorithm index', type=int, default=1)
+    parser.add_argument('-u', '--updates', help='Number of updates', type=int, default=4000)
+    parser.add_argument('-a', '--algorithm', help='RL algorithm index', type=int, default=0)
     parser.add_argument('-o', '--output', help='Output directory', default='models')
     parser.add_argument('-c', '--cuda', help='Use CUDA', default=False, type=bool)
     parser.add_argument('-t', '--trainer', help='Expert model', default=None)
