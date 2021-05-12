@@ -1,9 +1,9 @@
 import tensorflow as tf
 import numpy as np
-from gym.spaces import Box
+from reinforcement_learning.gym.spaces import Box
 
-from stable_baselines.common.policies import BasePolicy, nature_cnn, register_policy
-from stable_baselines.common.tf_layers import mlp
+from reinforcement_learning.common.policies import BasePolicy, nature_cnn, register_policy
+from reinforcement_learning.common.tf_layers import mlp
 
 EPS = 1e-6  # Avoid NaN (prevents division by zero or log of zero)
 # CAP the standard deviation of the actor

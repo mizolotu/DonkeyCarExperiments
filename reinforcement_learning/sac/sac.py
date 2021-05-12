@@ -4,13 +4,14 @@ import warnings
 import numpy as np
 import tensorflow as tf
 
-from stable_baselines.common import tf_util, OffPolicyRLModel, SetVerbosity, TensorboardWriter
-from stable_baselines.common.vec_env import VecEnv
-from stable_baselines.common.math_util import safe_mean, unscale_action, scale_action
-from stable_baselines.common.schedules import get_schedule_fn
-from stable_baselines.common.buffers import ReplayBuffer
-from stable_baselines.sac.policies import SACPolicy
-from stable_baselines import logger
+from reinforcement_learning.common import tf_util, OffPolicyRLModel, SetVerbosity, TensorboardWriter
+from reinforcement_learning.common.vec_env import VecEnv
+from reinforcement_learning.common.math_util import safe_mean, unscale_action, scale_action
+from reinforcement_learning.common.schedules import get_schedule_fn
+from reinforcement_learning.common.buffers import ReplayBuffer
+from reinforcement_learning.sac.policies import SACPolicy
+from reinforcement_learning import logger
+from collections import deque
 
 
 class SAC(OffPolicyRLModel):
@@ -58,8 +59,8 @@ class SAC(OffPolicyRLModel):
         If None, the number of cpu of the current machine will be used.
     """
 
-    def __init__(self, policy, env, gamma=0.99, learning_rate=3e-4, buffer_size=50000,
-                 learning_starts=100, train_freq=1, batch_size=64,
+    def __init__(self, policy, env, n_steps=64, eval_env=None, gamma=0.99, learning_rate=3e-4, buffer_size=100000,
+                 learning_starts=256, train_freq=1,
                  tau=0.005, ent_coef='auto', target_update_interval=1,
                  gradient_steps=1, target_entropy='auto', action_noise=None,
                  random_exploration=0.0, verbose=0, tensorboard_log=None,
@@ -74,7 +75,7 @@ class SAC(OffPolicyRLModel):
         self.learning_rate = learning_rate
         self.learning_starts = learning_starts
         self.train_freq = train_freq
-        self.batch_size = batch_size
+        self.batch_size = n_steps
         self.tau = tau
         # In the original paper, same learning rate is used for all networks
         # self.policy_lr = learning_rate
@@ -119,6 +120,8 @@ class SAC(OffPolicyRLModel):
         self.processed_obs_ph = None
         self.processed_next_obs_ph = None
         self.log_ent_coef = None
+
+        self.ep_info_buf = deque(maxlen=40 * n_steps)
 
         if _init_setup_model:
             self.setup_model()
@@ -433,9 +436,9 @@ class SAC(OffPolicyRLModel):
                     obs_ = new_obs_
 
                 # Retrieve reward and episode length if using Monitor wrapper
-                maybe_ep_info = info.get('episode')
-                if maybe_ep_info is not None:
-                    self.ep_info_buf.extend([maybe_ep_info])
+                #maybe_ep_info = info.get('episode')
+                #if maybe_ep_info is not None:
+                self.ep_info_buf.extend([{'r': reward}])
 
                 if writer is not None:
                     # Write reward per episode to tensorboard
@@ -490,13 +493,14 @@ class SAC(OffPolicyRLModel):
 
                 num_episodes = len(episode_rewards)
                 # Display training infos
-                if self.verbose >= 1 and done and log_interval is not None and len(episode_rewards) % log_interval == 0:
+                #if self.verbose >= 1 and done and log_interval is not None and len(episode_rewards) % log_interval == 0:
+                if (step + 1) % (self.batch_size * log_interval) == 0:
                     fps = int(step / (time.time() - start_time))
-                    logger.logkv("episodes", num_episodes)
-                    logger.logkv("mean 100 episode reward", mean_reward)
+                    #logger.logkv("episodes", num_episodes)
+                    #logger.logkv("mean 100 episode reward", mean_reward)
                     if len(self.ep_info_buf) > 0 and len(self.ep_info_buf[0]) > 0:
-                        logger.logkv('ep_rewmean', safe_mean([ep_info['r'] for ep_info in self.ep_info_buf]))
-                        logger.logkv('eplenmean', safe_mean([ep_info['l'] for ep_info in self.ep_info_buf]))
+                        logger.logkv('ep_reward_mean', safe_mean([ep_info['r'] for ep_info in self.ep_info_buf]))
+                        #logger.logkv('eplenmean', safe_mean([ep_info['l'] for ep_info in self.ep_info_buf]))
                     logger.logkv("n_updates", n_updates)
                     logger.logkv("current_lr", current_lr)
                     logger.logkv("fps", fps)

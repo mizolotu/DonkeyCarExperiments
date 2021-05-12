@@ -198,7 +198,7 @@ class DDPG(OffPolicyRLModel):
         If None, the number of cpu of the current machine will be used.
     """
     def __init__(self, policy, env, gamma=0.99, memory_policy=None, eval_env=None, nb_train_steps=50,
-                 nb_rollout_steps=256, nb_eval_steps=256, param_noise=None, action_noise=None,
+                 n_steps=256, nb_eval_steps=256, param_noise=None, action_noise=None,
                  normalize_observations=True, tau=0.001, batch_size=256, param_noise_adaption_interval=50,
                  normalize_returns=False, enable_popart=False, observation_range=(-5., 5.), critic_l2_reg=0.,
                  return_range=(-np.inf, np.inf), actor_lr=1e-4, critic_lr=1e-3, clip_norm=None, reward_scale=1.,
@@ -243,7 +243,7 @@ class DDPG(OffPolicyRLModel):
         self.clip_norm = clip_norm
         self.enable_popart = enable_popart
         self.reward_scale = reward_scale
-        self.batch_size = batch_size
+        self.batch_size = n_steps
         self.critic_l2_reg = critic_l2_reg
         self.eval_env = eval_env
         self.render = render
@@ -251,7 +251,7 @@ class DDPG(OffPolicyRLModel):
         self.nb_eval_steps = nb_eval_steps
         self.param_noise_adaption_interval = param_noise_adaption_interval
         self.nb_train_steps = nb_train_steps
-        self.nb_rollout_steps = nb_rollout_steps
+        self.nb_rollout_steps = n_steps
         self.memory_limit = memory_limit
         self.buffer_size = buffer_size
         self.tensorboard_log = tensorboard_log
