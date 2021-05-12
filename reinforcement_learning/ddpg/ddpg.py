@@ -197,7 +197,7 @@ class DDPG(OffPolicyRLModel):
     :param n_cpu_tf_sess: (int) The number of threads for TensorFlow operations
         If None, the number of cpu of the current machine will be used.
     """
-    def __init__(self, policy, env, gamma=0.99, memory_policy=None, eval_env=None, nb_train_steps=50,
+    def __init__(self, policy, env, gamma=0.99, memory_policy=None, eval_env=None, nb_train_steps=200,
                  n_steps=256, nb_eval_steps=256, param_noise=None, action_noise=None,
                  normalize_observations=True, tau=0.001, batch_size=256, param_noise_adaption_interval=50,
                  normalize_returns=False, enable_popart=False, observation_range=(-5., 5.), critic_l2_reg=0.,
