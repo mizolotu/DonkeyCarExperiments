@@ -324,7 +324,7 @@ class DDPG(OffPolicyRLModel):
         deterministic_action = unscale_action(self.action_space, self.actor_tf)
         return policy.obs_ph, self.actions, deterministic_action
 
-    def pretrain(self, data_tr, batch_size=256, n_epochs=10, learning_rate=1e-3, adam_epsilon=1e-8, val_interval=None, l2_loss_weight=0.0, log_freq=100):
+    def pretrain_(self, data_tr, batch_size=256, n_epochs=10, learning_rate=1e-3, adam_epsilon=1e-8, val_interval=None, l2_loss_weight=0.0, log_freq=100):
 
         continuous_actions = isinstance(self.action_space, reinforcement_learning.gym.spaces.Box)
         discrete_actions = isinstance(self.action_space, reinforcement_learning.gym.spaces.Discrete)

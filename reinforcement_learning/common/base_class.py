@@ -290,8 +290,7 @@ class BaseRLModel(ABC):
         """
         pass
 
-    def pretrain(self, dataset, n_epochs=10, learning_rate=1e-4,
-                 adam_epsilon=1e-8, val_interval=None):
+    def pretrain_(self, dataset, n_epochs=10, learning_rate=1e-4, adam_epsilon=1e-8, val_interval=None):
         """
         Pretrain a model using behavior cloning:
         supervised learning given an expert dataset.
@@ -374,6 +373,65 @@ class BaseRLModel(ABC):
                     print()
             # Free memory
             del expert_obs, expert_actions
+        if self.verbose > 0:
+            print("Pretraining done.")
+        return self
+
+    def pretrain(self, dataset, batch_size=64, n_epochs=10, learning_rate=1e-4, adam_epsilon=1e-8):
+
+        continuous_actions = isinstance(self.action_space, gym.spaces.Box)
+        discrete_actions = isinstance(self.action_space, gym.spaces.Discrete)
+        assert discrete_actions or continuous_actions, 'Only Discrete and Box action spaces are supported'
+
+        with self.graph.as_default():
+            with tf.compat.v1.variable_scope('pretrain'):
+                if continuous_actions:
+                    obs_ph, actions_ph, deterministic_actions_ph = self._get_pretrain_placeholders()
+                    loss = tf.reduce_mean(input_tensor=tf.square(actions_ph - deterministic_actions_ph))
+                else:
+                    obs_ph, actions_ph, actions_logits_ph = self._get_pretrain_placeholders()
+                    # actions_ph has a shape if (n_batch,), we reshape it to (n_batch, 1)
+                    # so no additional changes is needed in the dataloader
+                    actions_ph = tf.expand_dims(actions_ph, axis=1)
+                    one_hot_actions = tf.one_hot(actions_ph, self.action_space.n)
+                    loss = tf.nn.softmax_cross_entropy_with_logits(
+                        logits=actions_logits_ph,
+                        labels=tf.stop_gradient(one_hot_actions)
+                    )
+                    loss = tf.reduce_mean(input_tensor=loss)
+                optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=learning_rate, epsilon=adam_epsilon)
+                optim_op = optimizer.minimize(loss, var_list=self.params)
+
+            self.sess.run(tf.compat.v1.global_variables_initializer())
+
+        if self.verbose > 0:
+            print(f"Pretraining with Behavior Cloning using data of size {dataset.shape}")
+
+        print(self.observation_space, self.action_space)
+        obs_dim = self.observation_space.shape[0]
+        act_dim = self.action_space.shape[0]
+
+        ntrain = dataset.shape[0]
+        nbatches = ntrain // batch_size
+
+        for epoch_idx in range(int(n_epochs)):
+            train_loss = 0.0
+            for i in range(nbatches):
+                idx = np.random.choice(ntrain, batch_size)
+                expert_obs, expert_actions = dataset[idx, :obs_dim], dataset[idx, obs_dim:obs_dim + act_dim]
+                # expert_obs = expert_obs.reshape(batch_size, 1, obs_dim)
+                feed_dict = {
+                    obs_ph: expert_obs,
+                    actions_ph: expert_actions
+                }
+                train_loss_, _ = self.sess.run([loss, optim_op], feed_dict)
+                train_loss += train_loss_
+            train_loss /= nbatches
+            print('Epoch {0}/{1}: training loss = {2}'.format(epoch_idx + 1, n_epochs, train_loss))
+
+            del expert_obs, expert_actions
+
+
         if self.verbose > 0:
             print("Pretraining done.")
         return self

@@ -38,22 +38,16 @@ policy_list = [
     sac_policy
 ]
 
-pretrain_list = [
-    'default',
-    'buffer',
-    'all'
-]
-
 if __name__ == '__main__':
 
     parser = arp.ArgumentParser(description='Test state-of-art RL alghorithms in OpenAI gym')
     parser.add_argument('-e', '--env', help='Environment index', type=int, default=0)
     parser.add_argument('-s', '--steps', help='Number of episode steps', type=int, default=64)
     parser.add_argument('-u', '--updates', help='Number of updates', type=int, default=40000)
-    parser.add_argument('-a', '--algorithm', help='RL algorithm index', type=int, default=1)
+    parser.add_argument('-a', '--algorithm', help='RL algorithm index', type=int, default=0)
     parser.add_argument('-o', '--output', help='Output directory', default='models')
     parser.add_argument('-c', '--cuda', help='Use CUDA', default=False, type=bool)
-    parser.add_argument('-t', '--trainer', help='Expert model', default=None)
+    parser.add_argument('-t', '--trainer', help='Expert model', default='PPO2/policy_1_pure')
     args = parser.parse_args()
 
     if not args.cuda:
@@ -70,12 +64,12 @@ if __name__ == '__main__':
 
     if args.trainer is not None:
         postfix = 'bc'
-        checkpoint_file = find_checkpoint_with_latest_date('{0}/model_checkpoints/'.format(args.trainer))
+        checkpoint_file = find_checkpoint_with_latest_date(f'{args.output}/{env_class.__name__}/{args.trainer}')
         trainer_model = ppo.load(checkpoint_file)
         trainer_model.set_env(env)
         print('Expert model has been successfully loaded from {0}'.format(checkpoint_file))
         try:
-            p = pandas.read_csv('{0}/expert_data/'.format(args.trainer))
+            p = pandas.read_csv(f'{args.output}/{env_class.__name__}/{args.trainer}/expert_data.csv')
             trajs = p.values
         except Exception as e:
             trajs = []
@@ -87,25 +81,21 @@ if __name__ == '__main__':
                         trajs[-1].append(np.hstack([s, a, n, r]))
                     trajs[-1] = np.vstack(trajs[-1])
             trajs = np.vstack(trajs)
-            pandas.DataFrame(trajs).to_csv('{0}/expert_data/'.format(args.trainer), index=False, header=False)
+            pandas.DataFrame(trajs).to_csv(f'{args.output}/{env_class.__name__}/{args.trainer}/expert_data.csv', index=False, header=False)
         del trainer_model
-
-        for pretrain in pretrain_list:
-            logdir = f'{args.output}/{env_class.__name__}/{algorithm.__name__}/{pretrain.__name__}_{postfix}/'
-            format_strs = os.getenv('', 'stdout,log,csv').split(',')
-            logger.configure(os.path.abspath(logdir), format_strs)
-            model = algorithm(policy, env, n_steps=args.steps, verbose=1)
-            model.pretrain(trajs, args.nsteps, learning_rate=1e-3, mode=pretrain)
-            cb = CheckpointCallback(args.steps * args.updates, logdir, verbose=1)
-            model.learn(total_timesteps=totalsteps, callback=cb)
     else:
         postfix = 'pure'
-        logdir = f'{args.output}/{env_class.__name__}/{algorithm.__name__}/{policy_list[0].__name__}_{postfix}/'
-        format_strs = os.getenv('', 'stdout,log,csv').split(',')
-        logger.configure(os.path.abspath(logdir), format_strs)
-        model = algorithm(policy, env, eval_env=eval_env, n_steps=args.steps, verbose=1)
-        cb = CheckpointCallback(args.steps * args.updates, logdir, verbose=1)
-        model.learn(total_timesteps=totalsteps, callback=cb)
+
+    logdir = f'{args.output}/{env_class.__name__}/{algorithm.__name__}/{policy.__name__}_{postfix}/'
+    format_strs = os.getenv('', 'stdout,log,csv').split(',')
+    logger.configure(os.path.abspath(logdir), format_strs)
+
+    model = algorithm(policy, env, eval_env=eval_env, n_steps=args.steps, verbose=1)
+    if postfix == 'bc':
+        model.pretrain(trajs, batch_size=args.steps, n_epochs=100, learning_rate=1e-3)
+
+    cb = CheckpointCallback(args.steps * args.updates, logdir, verbose=1)
+    model.learn(total_timesteps=totalsteps, callback=cb)
 
 
 

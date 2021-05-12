@@ -44,6 +44,8 @@ def generate_traj(env, model, nsteps):
     n = len(env.remotes)
     states = [[] for _ in range(n)]
     actions = [[] for _ in range(n)]
+    next_states = [[] for _ in range(n)]
+    rewards = [[] for _ in range(n)]
     obs = env.reset()
     for i in range(nsteps):
         action, state = model.predict(obs)
@@ -51,8 +53,10 @@ def generate_traj(env, model, nsteps):
         for e in range(n):
             states[e].append(obs[e])
             actions[e].append(action[e])
+            next_states[e].append(next_obs[e])
+            rewards[e].append(reward[e])
         obs = np.array(next_obs)
-    return states, actions
+    return states, actions, next_states, rewards
 
 def find_checkpoint_with_latest_date(checkpoint_dir, prefix='rl_model_'):
     checkpoint_files = [item for item in os.listdir(checkpoint_dir) if osp.isfile(osp.join(checkpoint_dir, item)) and item.startswith(prefix) and item.endswith('.zip')]
@@ -68,10 +72,10 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--nenvs', help='Number of environments', type=int, default=16)
     parser.add_argument('-s', '--steps', help='Number of episode steps', type=int, default=64)
     parser.add_argument('-u', '--updates', help='Number of updates', type=int, default=10000)
-    parser.add_argument('-a', '--algorithm', help='RL algorithm index', type=int, default=0)
+    parser.add_argument('-a', '--algorithm', help='RL algorithm index', type=int, default=1)
     parser.add_argument('-o', '--output', help='Output directory', default='models')
     parser.add_argument('-c', '--cuda', help='Use CUDA', default=False, type=bool)
-    parser.add_argument('-t', '--trainer', help='Expert model', default=None)
+    parser.add_argument('-t', '--trainer', help='Expert model', default='PPO2/policy_1_pure')
     args = parser.parse_args()
 
     if not args.cuda:
@@ -88,12 +92,12 @@ if __name__ == '__main__':
 
     if args.trainer is not None:
         postfix = 'bc'
-        checkpoint_file = find_checkpoint_with_latest_date('{0}/model_checkpoints/'.format(args.trainer))
+        checkpoint_file = find_checkpoint_with_latest_date(f'{args.output}/{env_class.__name__}/{args.trainer}')
         trainer_model = ppo.load(checkpoint_file)
         trainer_model.set_env(env)
         print('Expert model has been successfully loaded from {0}'.format(checkpoint_file))
         try:
-            p = pandas.read_csv('{0}/expert_data/'.format(args.trainer))
+            p = pandas.read_csv(f'{args.output}/{env_class.__name__}/{args.trainer}/expert_data.csv')
             trajs = p.values
         except Exception as e:
             trajs = []
@@ -105,7 +109,7 @@ if __name__ == '__main__':
                         trajs[-1].append(np.hstack([s, a, n, r]))
                     trajs[-1] = np.vstack(trajs[-1])
             trajs = np.vstack(trajs)
-            pandas.DataFrame(trajs).to_csv('{0}/expert_data/'.format(args.trainer), index=False, header=False)
+            pandas.DataFrame(trajs).to_csv(f'{args.output}/{env_class.__name__}/{args.trainer}/expert_data.csv', index=False, header=False)
 
         del trainer_model
     else:
@@ -117,6 +121,6 @@ if __name__ == '__main__':
         logger.configure(os.path.abspath(logdir), format_strs)
         model = algorithm(policy, env, n_steps=args.steps, verbose=1)
         if postfix == 'bc':
-            model.pretrain(trajs, n_epochs=100, learning_rate=1e-3)
+            model.pretrain(trajs, batch_size=args.steps, n_epochs=100, learning_rate=1e-3)
         cb = CheckpointCallback(args.steps*args.updates, logdir, verbose=1)
         model.learn(total_timesteps=totalsteps, callback=cb)
