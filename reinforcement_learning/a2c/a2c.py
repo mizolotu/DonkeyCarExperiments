@@ -63,7 +63,7 @@ class A2C(ActorCriticRLModel):
         If None, the number of cpu of the current machine will be used.
     """
 
-    def __init__(self, policy, env, gamma=0.99, n_steps=2048, vf_coef=0.5, ent_coef=0.00001, max_grad_norm=0.5,
+    def __init__(self, policy, env, gamma=0.99, n_steps=2048, vf_coef=0.5, ent_coef=0.001, max_grad_norm=0.5,
                  learning_rate=1e-3, alpha=0.99, momentum=0.0, epsilon=1e-5, lr_schedule='constant',
                  verbose=0, tensorboard_log=None, _init_setup_model=True, policy_kwargs=None,
                  full_tensorboard_log=False, seed=None, n_cpu_tf_sess=None):
