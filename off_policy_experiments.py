@@ -19,7 +19,7 @@ from reinforcement_learning.ppo2.ppo2 import PPO2 as ppo
 from reinforcement_learning.ddpg.ddpg import DDPG as ddpg
 from reinforcement_learning.sac.sac import SAC as sac
 
-from on_policy_experiments import make_env, generate_traj, find_checkpoint_with_latest_date
+from on_policy_experiments import make_env, generate_traj, find_checkpoint_with_latest_date, good_checkpoints
 
 env_list = [
     PendulumEnv,

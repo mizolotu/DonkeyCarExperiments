@@ -65,6 +65,13 @@ def find_checkpoint_with_latest_date(checkpoint_dir, prefix='rl_model_'):
     idx = sorted(range(len(checkpoint_dates)), key=lambda k: checkpoint_dates[k])
     return checkpoint_fpaths[idx[-1]]
 
+good_checkpoints = [
+    640000,
+    640000,
+    1279995,
+    0
+]
+
 if __name__ == '__main__':
 
     parser = arp.ArgumentParser(description='Test state-of-art RL alghorithms in OpenAI gym')
@@ -92,7 +99,8 @@ if __name__ == '__main__':
 
     if args.trainer is not None:
         postfix = 'bc'
-        checkpoint_file = find_checkpoint_with_latest_date(f'{args.output}/{env_class.__name__}/{args.trainer}')
+        checkpoint_file = f'{args.output}/{env_class.__name__}/{args.trainer}/rl_model_{good_checkpoints[args.env]}_steps.zip'
+        print(checkpoint_file)
         trainer_model = ppo.load(checkpoint_file)
         trainer_model.set_env(env)
         print('Expert model has been successfully loaded from {0}'.format(checkpoint_file))
