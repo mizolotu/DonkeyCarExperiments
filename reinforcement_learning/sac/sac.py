@@ -510,7 +510,7 @@ class SAC(OffPolicyRLModel):
                     if len(infos_values) > 0:
                         for (name, val) in zip(self.infos_names, infos_values):
                             logger.logkv(name, val)
-                    logger.logkv("total timesteps", self.num_timesteps)
+                    logger.logkv("total_timesteps", self.num_timesteps)
                     logger.dumpkvs()
                     # Reset infos:
                     infos_values = []

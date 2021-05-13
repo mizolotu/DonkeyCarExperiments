@@ -100,7 +100,6 @@ if __name__ == '__main__':
     if args.trainer is not None:
         postfix = 'bc'
         checkpoint_file = f'{args.output}/{env_class.__name__}/{args.trainer}/rl_model_{good_checkpoints[args.env]}_steps.zip'
-        print(checkpoint_file)
         trainer_model = ppo.load(checkpoint_file)
         trainer_model.set_env(env)
         print('Expert model has been successfully loaded from {0}'.format(checkpoint_file))

@@ -121,6 +121,34 @@ schema_list = {
         'dirs': ['policy_0_pure', 'policy_1_pure', 'policy_2_pure'],
         'names': ['0/2 shared layers', '1/2 shared layers', '2/2 shared layers']
     },
+    12: {
+        'alg': 3,
+        'env': 0,
+        'xlimit': 10000000,
+        'dirs': ['MlpPolicy_pure'],
+        'names': ['No pretraining']
+    },
+    13: {
+        'alg': 3,
+        'env': 1,
+        'xlimit': 10000000,
+        'dirs': ['MlpPolicy_pure'],
+        'names': ['No pretraining']
+    },
+    14: {
+        'alg': 3,
+        'env': 2,
+        'xlimit': 10000000,
+        'dirs': ['MlpPolicy_pure'],
+        'names': ['No pretraining']
+    },
+    15: {
+        'alg': 3,
+        'env': 3,
+        'xlimit': 10000000,
+        'dirs': ['MlpPolicy_pure'],
+        'names': ['No pretraining']
+    },
 }
 
 if __name__ == '__main__':
@@ -128,7 +156,7 @@ if __name__ == '__main__':
     # params
 
     parser = arp.ArgumentParser(description='Plot progress')
-    parser.add_argument('-s', '--schema', help='Schema', default='0,1,2,4,5,6')
+    parser.add_argument('-s', '--schema', help='Schema', default='12,13,14,15')
     parser.add_argument('-i', '--input', help='Input', default='models')
     parser.add_argument('-o', '--output', help='Output', default='figures')
     args = parser.parse_args()
@@ -153,7 +181,10 @@ if __name__ == '__main__':
             fname = osp.join(args.input, env.__name__, alg.__name__, dir, 'progress.csv')
             p = pandas.read_csv(fname, delimiter=',', dtype=float)
             y = p['ep_reward_mean'].values
-            x = p['total_timesteps'].values
+            if 'total_timestamps' in p.keys():
+                x = p['total_timesteps'].values
+            else:
+                x = p['total timesteps'].values
             y = moving_average(y.reshape(len(y), 1)).reshape(x.shape)
             data.append([x, y])
         traces, layout = generate_line_scatter(names, data, colors, xlabel='Time steps', ylabel='Reward', show_legend=True, xrange=[0, xlimit])
