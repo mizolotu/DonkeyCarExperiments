@@ -250,7 +250,7 @@ class DDPG(OffPolicyRLModel):
         self.render_eval = render_eval
         self.nb_eval_steps = nb_eval_steps
         self.param_noise_adaption_interval = param_noise_adaption_interval
-        self.nb_train_steps = nb_train_steps
+        self.nb_train_steps = n_steps
         self.nb_rollout_steps = n_steps
         self.memory_limit = memory_limit
         self.buffer_size = buffer_size
