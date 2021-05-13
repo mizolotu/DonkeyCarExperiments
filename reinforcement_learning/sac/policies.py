@@ -173,7 +173,7 @@ class FeedForwardPolicy(SACPolicy):
         self.cnn_extractor = cnn_extractor
         self.reuse = reuse
         if layers is None:
-            layers = [64, 64]
+            layers = [256, 256]
         self.layers = layers
         self.reg_loss = None
         self.reg_weight = reg_weight
