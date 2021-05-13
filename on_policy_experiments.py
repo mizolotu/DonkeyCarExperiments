@@ -15,8 +15,6 @@ from reinforcement_learning.common.policies import policy_0, policy_1, policy_2
 
 from reinforcement_learning.a2c.a2c import A2C as a2c
 from reinforcement_learning.ppo2.ppo2 import PPO2 as ppo
-from reinforcement_learning.acktr.acktr import ACKTR as acktr
-from reinforcement_learning.trpo_mpi.trpo_mpi import TRPO as trpo
 
 env_list = [
     PendulumEnv,
@@ -69,7 +67,7 @@ good_checkpoints = [
     640000,
     640000,
     1279995,
-    0
+    9600002
 ]
 
 if __name__ == '__main__':

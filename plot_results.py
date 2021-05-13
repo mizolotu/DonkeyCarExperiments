@@ -225,7 +225,7 @@ if __name__ == '__main__':
         env_figs = osp.join(args.output, env.__name__)
         if not osp.exists(env_figs):
             os.mkdir(env_figs)
-        fig_fname = osp.join(env_figs, f'{alg.__name__}_{s_idx}')
+        fig_fname = osp.join(env_figs, f'{alg.__name__}')
         fig = go.Figure(data=traces, layout=layout)
         for ftype in ftypes:
             pio.write_image(fig, '{0}.{1}'.format(fig_fname, ftype))
