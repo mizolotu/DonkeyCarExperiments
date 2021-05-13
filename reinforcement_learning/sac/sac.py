@@ -59,7 +59,7 @@ class SAC(OffPolicyRLModel):
         If None, the number of cpu of the current machine will be used.
     """
 
-    def __init__(self, policy, env, n_steps=64, eval_env=None, gamma=0.99, learning_rate=3e-4, buffer_size=100000,
+    def __init__(self, policy, env, n_steps=64, eval_env=None, gamma=0.99, learning_rate=3e-4, buffer_size=10000,
                  learning_starts=256, train_freq=1,
                  tau=0.005, ent_coef='auto', target_update_interval=1,
                  gradient_steps=1, target_entropy='auto', action_noise=None,
