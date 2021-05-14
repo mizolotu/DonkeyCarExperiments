@@ -64,7 +64,7 @@ def find_checkpoint_with_latest_date(checkpoint_dir, prefix='rl_model_'):
     return checkpoint_fpaths[idx[-1]]
 
 good_checkpoints = [
-    10239997,
+    308224,
     640000,
     1279995,
     9600002
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--algorithm', help='RL algorithm index', type=int, default=1)
     parser.add_argument('-o', '--output', help='Output directory', default='models')
     parser.add_argument('-c', '--cuda', help='Use CUDA', default=False, type=bool)
-    parser.add_argument('-t', '--trainer', help='Expert model', default='PPO2/policy_1_pure')
+    parser.add_argument('-t', '--trainer', help='Expert model', default='PPO2/policy_1_expert')
     args = parser.parse_args()
 
     if not args.cuda:
