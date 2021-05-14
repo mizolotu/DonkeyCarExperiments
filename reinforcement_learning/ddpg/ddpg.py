@@ -329,7 +329,7 @@ class DDPG(OffPolicyRLModel):
         if self.verbose > 0:
             print("Pretraining both actor and critic with expert data for {0} epochs on {1} samples of size {2}:".format(n_epochs, data_tr.shape[0], data_tr.shape[1]))
 
-        obs_dim = self.observation_space.shape[1]
+        obs_dim = self.observation_space.shape[0]
         act_dim = self.action_space.shape[0]
 
         ntrain = data_tr.shape[0]
