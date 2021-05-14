@@ -113,7 +113,7 @@ if __name__ == '__main__':
         print('Expert model has been successfully loaded from {0}'.format(checkpoint_file))
 
         trajs = []
-        for i in range(100000 // args.steps):
+        for i in range(100000 // (nenvs * args.steps)):
             states, actions, next_states, rewards = generate_traj(env, trainer_model, args.steps)
             for se, ae, ne, re in zip(states, actions, next_states, rewards):
                 trajs.append([])
@@ -133,6 +133,6 @@ if __name__ == '__main__':
         logger.configure(os.path.abspath(logdir), format_strs)
         model = algorithm(policy, env, n_steps=args.steps, verbose=1)
         if postfix == 'bc':
-            model.pretrain(trajs, batch_size=args.steps, n_epochs=1, learning_rate=1e-3)
+            model.pretrain(trajs, batch_size=args.steps, n_epochs=10, learning_rate=1e-3)
         cb = CheckpointCallback(args.steps*args.updates, logdir, verbose=1)
         model.learn(total_timesteps=totalsteps, callback=cb)

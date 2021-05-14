@@ -46,7 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output', help='Output directory', default='models')
     parser.add_argument('-c', '--cuda', help='Use CUDA', default=False, type=bool)
     parser.add_argument('-t', '--trainer', help='Expert model', default='PPO2/policy_1_expert')
-    parser.add_argument('-p', '--pretrain', help='Full pretrain', default=True, type=bool)
+    parser.add_argument('-p', '--pretrain', help='Full pretrain', default=False, type=bool)
     args = parser.parse_args()
 
     if not args.cuda:
@@ -92,7 +92,7 @@ if __name__ == '__main__':
 
     model = algorithm(policy, env, eval_env=eval_env, n_steps=args.steps, verbose=1)
     if postfix == 'bc':
-        model.pretrain(trajs, batch_size=args.steps, n_epochs=1, learning_rate=1e-3)
+        model.pretrain(trajs, batch_size=args.steps, n_epochs=10, learning_rate=1e-3)
     elif postfix == 'ac':
         model.full_pretrain(trajs, batch_size=args.steps, n_epochs=1)
         print(len(model.replay_buffer))
