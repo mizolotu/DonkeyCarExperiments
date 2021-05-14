@@ -96,7 +96,7 @@ if __name__ == '__main__':
     if postfix == 'bc':
         model.pretrain(trajs, batch_size=args.steps, n_epochs=100, learning_rate=1e-3)
     elif postfix == 'ac':
-        model.full_pretrain(trajs, batch_size=args.steps, n_epochs=100)
+        model.full_pretrain(trajs, batch_size=args.steps, n_epochs=10)
 
     cb = CheckpointCallback(args.steps * args.updates, logdir, verbose=1)
     model.learn(total_timesteps=totalsteps, callback=cb)
