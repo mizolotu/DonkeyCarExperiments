@@ -47,7 +47,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--algorithm', help='RL algorithm index', type=int, default=0)
     parser.add_argument('-o', '--output', help='Output directory', default='models')
     parser.add_argument('-c', '--cuda', help='Use CUDA', default=False, type=bool)
-    parser.add_argument('-t', '--trainer', help='Expert model') #, default='PPO2/policy_1_pure')
+    parser.add_argument('-t', '--trainer', help='Expert model', default='PPO2/policy_1_pure')
     args = parser.parse_args()
 
     if not args.cuda:
