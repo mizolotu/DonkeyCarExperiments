@@ -63,13 +63,17 @@ def find_checkpoint_with_latest_date(checkpoint_dir, prefix='rl_model_'):
     idx = sorted(range(len(checkpoint_dates)), key=lambda k: checkpoint_dates[k])
     return checkpoint_fpaths[idx[-1]]
 
-def find_checkpoint_with_highest_explained_variance(checkpoint_dir):
+def find_checkpoint_with_highest_explained_variance(checkpoint_dir, prefix='rl_model_', postfix='_steps.zip'):
+    checkpoint_files = [item for item in os.listdir(checkpoint_dir) if osp.isfile(osp.join(checkpoint_dir, item)) and item.startswith(prefix) and item.endswith(postfix)]
+    checkpoint_timesteps = [item.split(prefix)[1] for item in checkpoint_files]
+    checkpoint_timesteps = [int(item.split(postfix)[0]) for item in checkpoint_timesteps]
     fname = osp.join(checkpoint_dir, 'progress.csv')
     p = pandas.read_csv(fname, delimiter=',', dtype=float)
     ev = p['explained_variance'].values
     idx = np.argmax(ev)
     tt = int(p['total_timesteps'].values[idx])
-    return osp.join(checkpoint_dir, f'rl_model_{tt}_steps.zip')
+    idx = np.argmin(np.abs(checkpoint_timesteps - tt))
+    return osp.join(checkpoint_dir, f'rl_model_{checkpoint_timesteps[idx]}_steps.zip')
 
 good_checkpoints = [
     228352,
