@@ -324,7 +324,7 @@ class DDPG(OffPolicyRLModel):
         deterministic_action = unscale_action(self.action_space, self.actor_tf)
         return policy.obs_ph, self.actions, deterministic_action
 
-    def full_pretrain(self, data_tr, batch_size=256, n_epochs=10, learning_rate=1e-3, adam_epsilon=1e-8):
+    def full_pretrain(self, data_tr, batch_size=256, n_epochs=10):
 
         if self.verbose > 0:
             print("Pretraining both actor and critic with expert data for {0} epochs on {1} samples of size {2}:".format(n_epochs, data_tr.shape[0], data_tr.shape[1]))
@@ -338,6 +338,9 @@ class DDPG(OffPolicyRLModel):
         with self.sess.as_default(), self.graph.as_default():
 
             for epoch_idx in range(int(n_epochs)):
+
+                print(f'Epoch {epoch_idx + 1}/{n_epochs}')
+
                 for i in range(nbatches):
                     idx = np.random.choice(ntrain, batch_size)
                     expert_obs, expert_actions = data_tr[idx, :obs_dim], data_tr[idx, obs_dim:obs_dim + act_dim]
