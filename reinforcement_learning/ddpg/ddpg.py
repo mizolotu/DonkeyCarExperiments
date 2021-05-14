@@ -335,27 +335,29 @@ class DDPG(OffPolicyRLModel):
         ntrain = data_tr.shape[0]
         nbatches = ntrain // batch_size
 
-        for epoch_idx in range(int(n_epochs)):
-            for i in range(nbatches):
-                idx = np.random.choice(ntrain, batch_size)
-                expert_obs, expert_actions = data_tr[idx, :obs_dim], data_tr[idx, obs_dim:obs_dim+act_dim]
-                next_expert_obs = data_tr[idx, obs_dim+act_dim:obs_dim+act_dim+obs_dim]
-                expert_reward = data_tr[idx, -1]
-                for i in range(len(idx)):
-                    self.replay_buffer_add(expert_obs[i, :], expert_actions[i, :], expert_reward[i], next_expert_obs[i, :], False, {})
+        with self.sess.as_default(), self.graph.as_default():
 
-                for t_train in range(self.nb_train_steps):
+            for epoch_idx in range(int(n_epochs)):
+                for i in range(nbatches):
+                    idx = np.random.choice(ntrain, batch_size)
+                    expert_obs, expert_actions = data_tr[idx, :obs_dim], data_tr[idx, obs_dim:obs_dim + act_dim]
+                    next_expert_obs = data_tr[idx, obs_dim + act_dim:obs_dim + act_dim + obs_dim]
+                    expert_reward = data_tr[idx, -1]
+                    for i in range(len(idx)):
+                        self.replay_buffer_add(expert_obs[i, :], expert_actions[i, :], expert_reward[i], next_expert_obs[i, :], False, {})
 
-                    if not self.replay_buffer.can_sample(self.batch_size):
-                        break
+                    for t_train in range(self.nb_train_steps):
 
-                    if len(self.replay_buffer) >= self.batch_size and t_train % self.param_noise_adaption_interval == 0:
-                        _ = self._adapt_param_noise()
+                        if not self.replay_buffer.can_sample(self.batch_size):
+                            break
 
-                    step = (int(t_train * (self.nb_rollout_steps / self.nb_train_steps)) + self.num_timesteps - self.nb_rollout_steps)
+                        if len(self.replay_buffer) >= self.batch_size and t_train % self.param_noise_adaption_interval == 0:
+                            _ = self._adapt_param_noise()
 
-                    _, _ = self._train_step(step, None, log=t_train == 0)
-                    self._update_target_net()
+                        step = (int(t_train * (self.nb_rollout_steps / self.nb_train_steps)) + self.num_timesteps - self.nb_rollout_steps)
+
+                        _, _ = self._train_step(step, None, log=t_train == 0)
+                        self._update_target_net()
 
         return self
 
