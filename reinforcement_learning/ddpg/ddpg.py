@@ -342,7 +342,7 @@ class DDPG(OffPolicyRLModel):
                 next_expert_obs = data_tr[idx, obs_dim+act_dim:obs_dim+act_dim+obs_dim]
                 expert_reward = data_tr[idx, -1]
                 for i in range(len(idx)):
-                    self.replay_buffer_add(expert_obs[i, :], expert_actions[i, :], expert_reward[i, :], next_expert_obs[i, :], False, {})
+                    self.replay_buffer_add(expert_obs[i, :], expert_actions[i, :], expert_reward[i], next_expert_obs[i, :], False, {})
 
                 for t_train in range(self.nb_train_steps):
 
