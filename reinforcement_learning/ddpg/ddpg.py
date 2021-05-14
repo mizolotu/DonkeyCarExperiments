@@ -349,18 +349,16 @@ class DDPG(OffPolicyRLModel):
                     for i in range(len(idx)):
                         self.replay_buffer_add(expert_obs[i, :], expert_actions[i, :], expert_reward[i], next_expert_obs[i, :], False, {})
 
-                    for t_train in range(self.nb_train_steps):
+                    if not self.replay_buffer.can_sample(self.batch_size):
+                        break
 
-                        if not self.replay_buffer.can_sample(self.batch_size):
-                            break
+                    if len(self.replay_buffer) >= self.batch_size and i % self.param_noise_adaption_interval == 0:
+                        _ = self._adapt_param_noise()
 
-                        if len(self.replay_buffer) >= self.batch_size and t_train % self.param_noise_adaption_interval == 0:
-                            _ = self._adapt_param_noise()
+                    step = (int(i * (self.nb_rollout_steps / self.nb_train_steps)) + self.num_timesteps - self.nb_rollout_steps)
 
-                        step = (int(t_train * (self.nb_rollout_steps / self.nb_train_steps)) + self.num_timesteps - self.nb_rollout_steps)
-
-                        _, _ = self._train_step(step, None, log=t_train == 0)
-                        self._update_target_net()
+                    _, _ = self._train_step(step, None, log=i == 0)
+                    self._update_target_net()
 
         return self
 
