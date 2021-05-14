@@ -20,7 +20,7 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--env', help='Environment index', type=int, default=0)
     parser.add_argument('-n', '--nenvs', help='Number of environments', type=int, default=16)
     parser.add_argument('-s', '--steps', help='Number of episode steps', type=int, default=64)
-    parser.add_argument('-u', '--updates', help='Number of updates', type=int, default=10000)
+    parser.add_argument('-u', '--updates', help='Number of updates', type=int, default=1000)
     parser.add_argument('-o', '--output', help='Output directory', default='models')
     parser.add_argument('-c', '--cuda', help='Use CUDA', default=False, type=bool)
     args = parser.parse_args()
@@ -42,14 +42,3 @@ if __name__ == '__main__':
     model = algorithm(policy, env, n_steps=args.steps, verbose=1)
     cb = CheckpointCallback(args.steps * nenvs, logdir, verbose=1)
     model.learn(total_timesteps=totalsteps, callback=cb)
-
-    trajs = []
-    for i in range(100):
-        states, actions, next_states, rewards = generate_traj(env, model, args.steps)
-        for se, ae, ne, re in zip(states, actions, next_states, rewards):
-            trajs.append([])
-            for s, a, n, r in zip(se, ae, ne, re):
-                trajs[-1].append(np.hstack([s, a, n, r]))
-            trajs[-1] = np.vstack(trajs[-1])
-    trajs = np.vstack(trajs)
-    pandas.DataFrame(trajs).to_csv(f'{logdir}/expert_data.csv', index=False, header=False)

@@ -59,7 +59,7 @@ class SAC(OffPolicyRLModel):
         If None, the number of cpu of the current machine will be used.
     """
 
-    def __init__(self, policy, env, n_steps=64, eval_env=None, gamma=0.99, learning_rate=3e-4, buffer_size=10000,
+    def __init__(self, policy, env, n_steps=64, eval_env=None, gamma=0.99, learning_rate=3e-4, buffer_size=100000,
                  learning_starts=256, train_freq=1,
                  tau=0.005, ent_coef='auto', target_update_interval=1,
                  gradient_steps=1, target_entropy='auto', action_noise=None,
@@ -131,6 +131,43 @@ class SAC(OffPolicyRLModel):
         # Rescale
         deterministic_action = unscale_action(self.action_space, self.deterministic_action)
         return policy.obs_ph, self.actions_ph, deterministic_action
+
+    def full_pretrain(self, data_tr, batch_size=256, n_epochs=10):
+
+        if self.verbose > 0:
+            print("Pretraining both actor and critic with expert data for {0} epochs on {1} samples of size {2}:".format(n_epochs, data_tr.shape[0], data_tr.shape[1]))
+
+        self.learning_rate = get_schedule_fn(self.learning_rate)
+
+        obs_dim = self.observation_space.shape[0]
+        act_dim = self.action_space.shape[0]
+
+        ntrain = data_tr.shape[0]
+        nbatches = ntrain // batch_size
+
+        with self.sess.as_default(), self.graph.as_default():
+
+            for epoch_idx in range(int(n_epochs)):
+
+                print(f'Epoch {epoch_idx + 1}/{n_epochs}')
+
+                for i in range(nbatches):
+                    idx = np.random.choice(ntrain, batch_size)
+                    expert_obs, expert_actions = data_tr[idx, :obs_dim], data_tr[idx, obs_dim:obs_dim + act_dim]
+                    next_expert_obs = data_tr[idx, obs_dim + act_dim:obs_dim + act_dim + obs_dim]
+                    expert_reward = data_tr[idx, -1]
+                    for i in range(len(idx)):
+                        self.replay_buffer_add(expert_obs[i, :], expert_actions[i, :], expert_reward[i], next_expert_obs[i, :], False, {})
+
+                    if not self.replay_buffer.can_sample(self.batch_size):
+                        break
+
+                    frac = 1.0 - (epoch_idx * nbatches + i) / n_epochs * nbatches
+                    current_lr = self.learning_rate(frac)
+                    self._train_step(epoch_idx * nbatches + i, None, current_lr)
+                    self.sess.run(self.target_update_op)
+
+        return self
 
     def setup_model(self):
         with SetVerbosity(self.verbose):
@@ -354,8 +391,7 @@ class SAC(OffPolicyRLModel):
 
         return policy_loss, qf1_loss, qf2_loss, value_loss, entropy
 
-    def learn(self, total_timesteps, callback=None,
-              log_interval=4, tb_log_name="SAC", reset_num_timesteps=True, replay_wrapper=None):
+    def learn(self, total_timesteps, callback=None, log_interval=4, tb_log_name="SAC", reset_num_timesteps=True, replay_wrapper=None):
 
         new_tb_log = self._init_num_timesteps(reset_num_timesteps)
         callback = self._init_callback(callback)

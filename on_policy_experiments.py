@@ -63,8 +63,16 @@ def find_checkpoint_with_latest_date(checkpoint_dir, prefix='rl_model_'):
     idx = sorted(range(len(checkpoint_dates)), key=lambda k: checkpoint_dates[k])
     return checkpoint_fpaths[idx[-1]]
 
+def find_checkpoint_with_highest_explained_variance(checkpoint_dir):
+    fname = osp.join(checkpoint_dir, 'progress.csv')
+    p = pandas.read_csv(fname, delimiter=',', dtype=float)
+    ev = p['explained_variance'].values
+    idx = np.argmax(ev)
+    tt = int(p['total_timesteps'].values[idx])
+    return osp.join(checkpoint_dir, f'rl_model_{tt}_steps.zip')
+
 good_checkpoints = [
-    308224,
+    228352,
     640000,
     1279995,
     9600002
@@ -96,27 +104,26 @@ if __name__ == '__main__':
     eval_env = SubprocVecEnv(eval_env_fns)
 
     if args.trainer is not None:
+
         postfix = 'bc'
-        checkpoint_file = f'{args.output}/{env_class.__name__}/{args.trainer}/rl_model_{good_checkpoints[args.env]}_steps.zip'
+        #checkpoint_file = f'{args.output}/{env_class.__name__}/{args.trainer}/rl_model_{good_checkpoints[args.env]}_steps.zip'
+        checkpoint_file = find_checkpoint_with_highest_explained_variance(f'{args.output}/{env_class.__name__}/{args.trainer}')
         trainer_model = ppo.load(checkpoint_file)
         trainer_model.set_env(env)
         print('Expert model has been successfully loaded from {0}'.format(checkpoint_file))
-        try:
-            p = pandas.read_csv(f'{args.output}/{env_class.__name__}/{args.trainer}/expert_data.csv')
-            trajs = p.values
-        except Exception as e:
-            trajs = []
-            for i in range(100):
-                states, actions, next_states, rewards = generate_traj(env, trainer_model, args.steps)
-                for se, ae, ne, re in zip(states, actions, next_states, rewards):
-                    trajs.append([])
-                    for s, a, n, r in zip(se, ae, ne, re):
-                        trajs[-1].append(np.hstack([s, a, n, r]))
-                    trajs[-1] = np.vstack(trajs[-1])
-            trajs = np.vstack(trajs)
-            pandas.DataFrame(trajs).to_csv(f'{args.output}/{env_class.__name__}/{args.trainer}/expert_data.csv', index=False, header=False)
+
+        trajs = []
+        for i in range(100):
+            states, actions, next_states, rewards = generate_traj(env, trainer_model, args.steps)
+            for se, ae, ne, re in zip(states, actions, next_states, rewards):
+                trajs.append([])
+                for s, a, n, r in zip(se, ae, ne, re):
+                    trajs[-1].append(np.hstack([s, a, n, r]))
+                trajs[-1] = np.vstack(trajs[-1])
+        trajs = np.vstack(trajs)
 
         del trainer_model
+
     else:
         postfix = 'pure'
 

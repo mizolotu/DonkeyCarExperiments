@@ -202,7 +202,7 @@ class DDPG(OffPolicyRLModel):
                  normalize_observations=True, tau=0.001, batch_size=256, param_noise_adaption_interval=50,
                  normalize_returns=False, enable_popart=False, observation_range=(-5., 5.), critic_l2_reg=0.,
                  return_range=(-np.inf, np.inf), actor_lr=1e-4, critic_lr=1e-3, clip_norm=None, reward_scale=1.,
-                 render=False, render_eval=False, memory_limit=None, buffer_size=10000, random_exploration=0.0,
+                 render=False, render_eval=False, memory_limit=None, buffer_size=100000, random_exploration=0.0,
                  verbose=0, tensorboard_log=None, _init_setup_model=True, policy_kwargs=None,
                  full_tensorboard_log=False, seed=None, n_cpu_tf_sess=1):
 

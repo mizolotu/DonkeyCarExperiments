@@ -124,58 +124,58 @@ schema_list = {
     8: {
         'alg': 2,
         'env': 0,
-        'xlimit': 100000,
-        'dirs': ['MlpPolicy_pure'],
-        'names': ['No pretraining']
+        'xlimit': 20000,
+        'dirs': ['MlpPolicy_pure', 'MlpPolicy_bc', 'MlpPolicy_ac'],
+        'names': ['No pretraining', 'Behavioral clonning', 'Full pretraining']
     },
     9: {
         'alg': 2,
         'env': 1,
         'xlimit': 100000,
-        'dirs': ['MlpPolicy_pure'],
-        'names': ['No pretraining']
+        'dirs': ['MlpPolicy_pure', 'MlpPolicy_bc', 'MlpPolicy_ac'],
+        'names': ['No pretraining', 'Behavioral clonning', 'Full pretraining']
     },
     10: {
         'alg': 2,
         'env': 2,
         'xlimit': 10000000,
-        'dirs': ['MlpPolicy_pure'],
-        'names': ['No pretraining']
+        'dirs': ['MlpPolicy_pure', 'MlpPolicy_bc', 'MlpPolicy_ac'],
+        'names': ['No pretraining', 'Behavioral clonning', 'Full pretraining']
     },
     11: {
         'alg': 2,
         'env': 3,
         'xlimit': 10000000,
-        'dirs': ['MlpPolicy_pure'],
-        'names': ['No pretraining']
+        'dirs': ['MlpPolicy_pure', 'MlpPolicy_bc', 'MlpPolicy_ac'],
+        'names': ['No pretraining', 'Behavioral clonning', 'Full pretraining']
     },
     12: {
         'alg': 3,
         'env': 0,
-        'xlimit': 100000,
-        'dirs': ['MlpPolicy_pure'],
-        'names': ['No pretraining']
+        'xlimit': 20000,
+        'dirs': ['MlpPolicy_pure', 'MlpPolicy_bc', 'MlpPolicy_ac'],
+        'names': ['No pretraining', 'Behavioral clonning', 'Full pretraining']
     },
     13: {
         'alg': 3,
         'env': 1,
         'xlimit': 100000,
-        'dirs': ['MlpPolicy_pure'],
-        'names': ['No pretraining']
+        'dirs': ['MlpPolicy_pure', 'MlpPolicy_bc', 'MlpPolicy_ac'],
+        'names': ['No pretraining', 'Behavioral clonning', 'Full pretraining']
     },
     14: {
         'alg': 3,
         'env': 2,
         'xlimit': 2000000,
-        'dirs': ['MlpPolicy_pure'],
-        'names': ['No pretraining']
+        'dirs': ['MlpPolicy_pure', 'MlpPolicy_bc', 'MlpPolicy_ac'],
+        'names': ['No pretraining', 'Behavioral clonning', 'Full pretraining']
     },
     15: {
         'alg': 3,
         'env': 3,
         'xlimit': 2000000,
-        'dirs': ['MlpPolicy_pure'],
-        'names': ['No pretraining']
+        'dirs': ['MlpPolicy_pure', 'MlpPolicy_bc', 'MlpPolicy_ac'],
+        'names': ['No pretraining', 'Behavioral clonning', 'Full pretraining']
     },
     16: {
         'alg': 0,
@@ -240,7 +240,7 @@ if __name__ == '__main__':
     # params
 
     parser = arp.ArgumentParser(description='Plot progress')
-    parser.add_argument('-s', '--schema', help='Schema', default='16,17,18,20,21,22')
+    parser.add_argument('-s', '--schema', help='Schema', default='12')
     parser.add_argument('-i', '--input', help='Input', default='models')
     parser.add_argument('-o', '--output', help='Output', default='figures')
     args = parser.parse_args()
