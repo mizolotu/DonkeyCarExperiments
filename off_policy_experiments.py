@@ -94,7 +94,7 @@ if __name__ == '__main__':
 
     model = algorithm(policy, env, eval_env=eval_env, n_steps=args.steps, verbose=1)
     if postfix == 'bc':
-        model.pretrain(trajs, batch_size=args.steps, n_epochs=100, learning_rate=1e-3)
+        model.pretrain(trajs, batch_size=args.steps, n_epochs=10, learning_rate=1e-3)
     elif postfix == 'ac':
         model.full_pretrain(trajs, batch_size=args.steps, n_epochs=10)
 
