@@ -133,6 +133,6 @@ if __name__ == '__main__':
         logger.configure(os.path.abspath(logdir), format_strs)
         model = algorithm(policy, env, n_steps=args.steps, verbose=1)
         if postfix == 'bc':
-            model.pretrain(trajs, batch_size=args.steps, n_epochs=10, learning_rate=1e-3)
+            model.pretrain(trajs, batch_size=args.steps, n_epochs=1, learning_rate=1e-3)
         cb = CheckpointCallback(args.steps*args.updates, logdir, verbose=1)
         model.learn(total_timesteps=totalsteps, callback=cb)
