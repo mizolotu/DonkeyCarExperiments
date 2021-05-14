@@ -64,7 +64,7 @@ def find_checkpoint_with_latest_date(checkpoint_dir, prefix='rl_model_'):
     return checkpoint_fpaths[idx[-1]]
 
 good_checkpoints = [
-    640000,
+    1280000,
     640000,
     1279995,
     9600002
