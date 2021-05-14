@@ -324,39 +324,11 @@ class DDPG(OffPolicyRLModel):
         deterministic_action = unscale_action(self.action_space, self.actor_tf)
         return policy.obs_ph, self.actions, deterministic_action
 
-    def pretrain_(self, data_tr, batch_size=256, n_epochs=10, learning_rate=1e-3, adam_epsilon=1e-8, val_interval=None, l2_loss_weight=0.0, log_freq=100):
-
-        continuous_actions = isinstance(self.action_space, reinforcement_learning.gym.spaces.Box)
-        discrete_actions = isinstance(self.action_space, reinforcement_learning.gym.spaces.Discrete)
-
-        assert discrete_actions or continuous_actions, 'Only Discrete and Box action spaces are supported'
-
-        with self.graph.as_default():
-            with tf.compat.v1.variable_scope('pretrain'):
-                if continuous_actions:
-                    obs_ph, actions_ph, deterministic_actions_ph = self._get_pretrain_placeholders()
-                    policy_loss = tf.reduce_mean(input_tensor=tf.square(actions_ph - deterministic_actions_ph))
-                    weight_params = [v for v in self.params if '/b' not in v.name]
-                    l2_loss = tf.reduce_sum([tf.nn.l2_loss(v) for v in weight_params])
-                    loss = policy_loss + l2_loss_weight * l2_loss
-                else:
-                    obs_ph, actions_ph, actions_logits_ph = self._get_pretrain_placeholders()
-                    actions_ph = tf.expand_dims(actions_ph, axis=1)
-                    one_hot_actions = tf.one_hot(actions_ph, self.action_space.n)
-                    loss = tf.nn.softmax_cross_entropy_with_logits(
-                        logits=actions_logits_ph,
-                        labels=tf.stop_gradient(one_hot_actions)
-                    )
-                    loss = tf.reduce_mean(input_tensor=loss)
-                optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=learning_rate, epsilon=adam_epsilon)
-                optim_op = optimizer.minimize(loss, var_list=self.params)
-
-            self.sess.run(tf.compat.v1.global_variables_initializer())
+    def full_pretrain(self, data_tr, batch_size=256, n_epochs=10, learning_rate=1e-3, adam_epsilon=1e-8):
 
         if self.verbose > 0:
-            print("Pretraining with behavior cloning for {0} epochs on {1} samples of size {2}:".format(n_epochs, data_tr.shape[0], data_tr.shape[1]))
+            print("Pretraining both actor and critic with expert data for {0} epochs on {1} samples of size {2}:".format(n_epochs, data_tr.shape[0], data_tr.shape[1]))
 
-        print(self.observation_space, self.action_space)
         obs_dim = self.observation_space.shape[1]
         act_dim = self.action_space.shape[0]
 
@@ -364,22 +336,26 @@ class DDPG(OffPolicyRLModel):
         nbatches = ntrain // batch_size
 
         for epoch_idx in range(int(n_epochs)):
-            train_loss = 0.0
             for i in range(nbatches):
                 idx = np.random.choice(ntrain, batch_size)
                 expert_obs, expert_actions = data_tr[idx, :obs_dim], data_tr[idx, obs_dim:obs_dim+act_dim]
-                expert_obs = expert_obs.reshape(batch_size, 1, obs_dim)
-                feed_dict = {
-                    obs_ph: expert_obs,
-                    actions_ph: expert_actions
-                }
-                train_loss_, _ = self.sess.run([loss, optim_op], feed_dict)
-                train_loss += train_loss_
-            train_loss /= nbatches
-            print('Epoch {0}/{1}: training loss = {2}'.format(epoch_idx + 1, n_epochs, train_loss))
+                next_expert_obs = data_tr[idx, obs_dim+act_dim:obs_dim+act_dim+obs_dim]
+                expert_reward = data_tr[idx, -1]
+                for i in range(len(idx)):
+                    self.replay_buffer_add(expert_obs[i, :], expert_actions[i, :], expert_reward[i, :], next_expert_obs[i, :], False, {})
 
-        del expert_obs, expert_actions
-        print("Pretraining done!")
+                for t_train in range(self.nb_train_steps):
+
+                    if not self.replay_buffer.can_sample(self.batch_size):
+                        break
+
+                    if len(self.replay_buffer) >= self.batch_size and t_train % self.param_noise_adaption_interval == 0:
+                        _ = self._adapt_param_noise()
+
+                    step = (int(t_train * (self.nb_rollout_steps / self.nb_train_steps)) + self.num_timesteps - self.nb_rollout_steps)
+
+                    _, _ = self._train_step(step, None, log=t_train == 0)
+                    self._update_target_net()
 
         return self
 
@@ -874,8 +850,7 @@ class DDPG(OffPolicyRLModel):
                 self.param_noise_stddev: self.param_noise.current_stddev,
             })
 
-    def learn(self, total_timesteps, callback=None, log_interval=4, tb_log_name="DDPG",
-              reset_num_timesteps=True, replay_wrapper=None):
+    def learn(self, total_timesteps, callback=None, log_interval=4, tb_log_name="DDPG", reset_num_timesteps=True, replay_wrapper=None):
 
         new_tb_log = self._init_num_timesteps(reset_num_timesteps)
         callback = self._init_callback(callback)

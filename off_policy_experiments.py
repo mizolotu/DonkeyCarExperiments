@@ -1,6 +1,5 @@
 import argparse as arp
-import os, pathlib, pandas
-import os.path as osp
+import os, pandas
 import numpy as np
 
 from reinforcement_learning import logger
@@ -14,12 +13,11 @@ from reinforcement_learning.common.vec_env.subproc_vec_env import SubprocVecEnv
 from reinforcement_learning.ddpg.policies import MlpPolicy as ddpg_policy
 from reinforcement_learning.sac.policies import MlpPolicy as sac_policy
 
-from reinforcement_learning.a2c.a2c import A2C as a2c
 from reinforcement_learning.ppo2.ppo2 import PPO2 as ppo
 from reinforcement_learning.ddpg.ddpg import DDPG as ddpg
 from reinforcement_learning.sac.sac import SAC as sac
 
-from on_policy_experiments import make_env, generate_traj, find_checkpoint_with_latest_date, good_checkpoints
+from on_policy_experiments import make_env, generate_traj, good_checkpoints
 
 env_list = [
     PendulumEnv,
@@ -48,6 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output', help='Output directory', default='models')
     parser.add_argument('-c', '--cuda', help='Use CUDA', default=False, type=bool)
     parser.add_argument('-t', '--trainer', help='Expert model', default='PPO2/policy_1_pure')
+    parser.add_argument('-p', '--pretrain', help='Full pretrain', default=True, type=bool)
     args = parser.parse_args()
 
     if not args.cuda:
@@ -63,7 +62,10 @@ if __name__ == '__main__':
     eval_env = SubprocVecEnv(eval_env_fns)
 
     if args.trainer is not None:
-        postfix = 'bc'
+        if args.pretrain:
+            postfix = 'ac'
+        else:
+            postfix = 'bc'
         checkpoint_file = f'{args.output}/{env_class.__name__}/{args.trainer}/rl_model_{good_checkpoints[args.env]}_steps.zip'
         trainer_model = ppo.load(checkpoint_file)
         trainer_model.set_env(env)
@@ -93,6 +95,8 @@ if __name__ == '__main__':
     model = algorithm(policy, env, eval_env=eval_env, n_steps=args.steps, verbose=1)
     if postfix == 'bc':
         model.pretrain(trajs, batch_size=args.steps, n_epochs=100, learning_rate=1e-3)
+    elif postfix == 'ac':
+        model.full_pretrain(trajs, batch_size=args.steps, n_epochs=100, learning_rate=1e-3)
 
     cb = CheckpointCallback(args.steps * args.updates, logdir, verbose=1)
     model.learn(total_timesteps=totalsteps, callback=cb)

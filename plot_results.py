@@ -177,6 +177,62 @@ schema_list = {
         'dirs': ['MlpPolicy_pure'],
         'names': ['No pretraining']
     },
+    16: {
+        'alg': 0,
+        'env': 0,
+        'xlimit': 6000000,
+        'dirs': ['policy_0_bc', 'policy_1_bc', 'policy_2_bc', 'policy_1_pure'],
+        'names': ['0/2 shared layers', '1/2 shared layers', '2/2 shared layers', 'expert policy']
+    },
+    17: {
+        'alg': 0,
+        'env': 1,
+        'xlimit': 4000000,
+        'dirs': ['policy_0_bc', 'policy_1_bc', 'policy_2_bc', 'policy_1_pure'],
+        'names': ['0/2 shared layers', '1/2 shared layers', '2/2 shared layers', 'expert policy']
+    },
+    18: {
+        'alg': 0,
+        'env': 2,
+        'xlimit': 8000000,
+        'dirs': ['policy_0_bc', 'policy_1_bc', 'policy_2_bc', 'policy_1_pure'],
+        'names': ['0/2 shared layers', '1/2 shared layers', '2/2 shared layers', 'expert policy']
+    },
+    19: {
+        'alg': 0,
+        'env': 3,
+        'xlimit': 10000000,
+        'dirs': ['policy_0_bc', 'policy_1_bc', 'policy_2_bc', 'policy_1_pure'],
+        'names': ['0/2 shared layers', '1/2 shared layers', '2/2 shared layers', 'expert policy']
+    },
+    20: {
+        'alg': 1,
+        'env': 0,
+        'xlimit': 1000000,
+        'dirs': ['policy_0_bc', 'policy_1_bc', 'policy_2_bc', 'policy_1_pure'],
+        'names': ['0/2 shared layers', '1/2 shared layers', '2/2 shared layers', 'expert policy']
+    },
+    21: {
+        'alg': 1,
+        'env': 1,
+        'xlimit': 1000000,
+        'dirs': ['policy_0_bc', 'policy_1_bc', 'policy_2_bc', 'policy_1_pure'],
+        'names': ['0/2 shared layers', '1/2 shared layers', '2/2 shared layers', 'expert policy']
+    },
+    22: {
+        'alg': 1,
+        'env': 2,
+        'xlimit': 2000000,
+        'dirs': ['policy_0_bc', 'policy_1_bc', 'policy_2_bc', 'policy_1_pure'],
+        'names': ['0/2 shared layers', '1/2 shared layers', '2/2 shared layers', 'expert policy']
+    },
+    23: {
+        'alg': 1,
+        'env': 3,
+        'xlimit': 10000000,
+        'dirs': ['policy_0_bc', 'policy_1_bc', 'policy_2_bc', 'policy_1_pure'],
+        'names': ['0/2 shared layers', '1/2 shared layers', '2/2 shared layers', 'expert policy']
+    },
 }
 
 if __name__ == '__main__':
@@ -184,7 +240,7 @@ if __name__ == '__main__':
     # params
 
     parser = arp.ArgumentParser(description='Plot progress')
-    parser.add_argument('-s', '--schema', help='Schema', default='8,9,10,11')
+    parser.add_argument('-s', '--schema', help='Schema', default='16,17,18,20,21,22')
     parser.add_argument('-i', '--input', help='Input', default='models')
     parser.add_argument('-o', '--output', help='Output', default='figures')
     args = parser.parse_args()
@@ -225,7 +281,7 @@ if __name__ == '__main__':
         env_figs = osp.join(args.output, env.__name__)
         if not osp.exists(env_figs):
             os.mkdir(env_figs)
-        fig_fname = osp.join(env_figs, f'{alg.__name__}')
+        fig_fname = osp.join(env_figs, f'{alg.__name__}_{s_idx}')
         fig = go.Figure(data=traces, layout=layout)
         for ftype in ftypes:
             pio.write_image(fig, '{0}.{1}'.format(fig_fname, ftype))
