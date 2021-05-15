@@ -45,7 +45,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--algorithm', help='RL algorithm index', type=int, default=1)
     parser.add_argument('-o', '--output', help='Output directory', default='models')
     parser.add_argument('-c', '--cuda', help='Use CUDA', default=False, type=bool)
-    parser.add_argument('-t', '--trainer', help='Expert model', default='PPO2/policy_1_expert')
+    parser.add_argument('-t', '--trainer', help='Expert model') #, default='PPO2/policy_1_expert')
     parser.add_argument('-p', '--pretrain', help='Full pretrain', default=False, type=bool)
     args = parser.parse_args()
 
