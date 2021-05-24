@@ -47,8 +47,9 @@ class DonkeyEnv():
     THROTTLE_MAX = 1.0
     VAL_PER_PIXEL = 255
 
-    def __init__(self, level, conf=None):
+    def __init__(self, level, conf=None, simple_obs=False):
         print("starting DonkeyGym env")
+        self.simple_obs = simple_obs
         self.viewer = None
         self.proc = None
 
@@ -118,25 +119,19 @@ class DonkeyEnv():
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
+    def observe(self):
+        return self.viewer.observe()
+
     def step(self, action):
         for i in range(self.frame_skip):
             self.viewer.take_action(action)
             observation, reward, done, info = self.viewer.observe()
-            observation = np.array([
-                *info['car'],
-                *info['pos'],
-                info['cte'],
-                info['speed'],
-                *info['gyro'],
-                *info['accel'],
-                *info['vel']
-            ]).reshape(1,-1)
+            if self.simple_obs:
+                observation = self._get_simple_obs(info)
         return observation, reward, done, info
 
-    def reset(self):
-        self.viewer.reset()
-        observation, reward, done, info = self.viewer.observe()
-        observation = np.array([
+    def _get_simple_obs(self, info):
+        return np.array([
             *info['car'],
             *info['pos'],
             info['cte'],
@@ -145,6 +140,12 @@ class DonkeyEnv():
             *info['accel'],
             *info['vel']
         ]).reshape(1, -1)
+
+    def reset(self):
+        self.viewer.reset()
+        observation, reward, done, info = self.viewer.observe()
+        if self.simple_obs:
+            observation = self._get_simple_obs(info)
         time.sleep(1)
         return observation
 
